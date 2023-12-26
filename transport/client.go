@@ -170,6 +170,8 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 		}
 		c.recvNotif <- rIn
 		return false, hasPing
+	} else if resp.StatusCode == http.StatusAccepted {
+		return false, false
 	}
 	return true, false
 }
