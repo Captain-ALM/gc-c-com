@@ -410,18 +410,22 @@ func (c *Client) SetKeepAlive(ka time.Duration) {
 	if c == nil {
 		return
 	}
-	c.kaMutex.Lock()
-	defer c.kaMutex.Unlock()
-	if ka > 0 {
-		if c.keepAlive < 1 && c.conn != nil {
-			c.keepAlive = ka
-			c.wsKeepAliveStart()
-		} else {
-			c.keepAlive = ka
+	if c.IsActive() {
+		c.kaMutex.Lock()
+		defer c.kaMutex.Unlock()
+		if ka > 0 {
+			if c.keepAlive < 1 && c.conn != nil {
+				c.keepAlive = ka
+				c.wsKeepAliveStart()
+			} else {
+				c.keepAlive = ka
+			}
+		} else if c.conn != nil {
+			c.kaNotif <- true
+			c.keepAlive = 0
 		}
-	} else if c.conn != nil {
-		c.kaNotif <- true
-		c.keepAlive = 0
+	} else {
+		c.keepAlive = ka
 	}
 }
 
