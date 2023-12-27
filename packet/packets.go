@@ -19,7 +19,11 @@ func NewPong() *Packet {
 }
 
 func New(command string, payload any, key *rsa.PrivateKey) (*Packet, error) {
-	py, err := json.Marshal(payload)
+	var py []byte
+	var err error
+	if payload != nil {
+		py, err = json.Marshal(payload)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +49,13 @@ func From(packet []byte) (*Packet, error) {
 func FromIgnoreError(packet []byte) *Packet {
 	pk, _ := From(packet)
 	return pk
+}
+
+func FromNew(pk *Packet, err error) *Packet {
+	if err == nil {
+		return pk
+	}
+	return &Packet{}
 }
 
 func GetCommand(packet []byte) (string, error) {
