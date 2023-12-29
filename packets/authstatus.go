@@ -6,7 +6,7 @@ import (
 	"golang.local/gc-c-com/packet"
 )
 
-// AuthStatus Sent from app server to web client (Except EnumAuthStatusRequest sent from web client to app server)
+// AuthStatus Sent from app server to web client
 const AuthStatus = "astat"
 
 func NewAuthStatus(status EnumAuthStatus, tokenHash []byte, userEmail string, key *rsa.PrivateKey) (*packet.Packet, error) {
@@ -37,8 +37,6 @@ func (e *EnumAuthStatus) MarshalJSON() ([]byte, error) {
 }
 
 const (
-	// EnumAuthStatusRequest Web client requests auth status
-	EnumAuthStatusRequest   = EnumAuthStatus("request")
 	EnumAuthStatusRequired  = EnumAuthStatus("required")
 	EnumAuthStatusSignedOut = EnumAuthStatus("none")
 	EnumAuthStatusLoggedOut
