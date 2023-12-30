@@ -15,3 +15,5 @@ func NewID(id int, key *rsa.PrivateKey) (*packet.Packet, error) {
 type IDPayload struct {
 	ID int `json:"i"`
 }
+
+//This payload is also used by QuizRequest and QuizDelete
