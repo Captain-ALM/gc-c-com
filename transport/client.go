@@ -6,6 +6,8 @@ import (
 	"errors"
 	"github.com/gorilla/websocket"
 	"golang.local/gc-c-com/packet"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -62,7 +64,7 @@ func (c *Client) restStart(restURL string) bool {
 	if err != nil {
 		return false
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _, _ = io.Copy(ioutil.Discard, resp.Body); _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
 		buff := make([]byte, resp.ContentLength)
 		ln, err := resp.Body.Read(buff)
@@ -130,6 +132,7 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 	var resp *http.Response
 	var err error
 	defer func() {
+		_, _ = io.Copy(ioutil.Discard, resp.Body)
 		_ = resp.Body.Close()
 		c.sendBuffer = nil
 	}()
@@ -355,6 +358,9 @@ func (c *Client) close(err error) error {
 	if c.conn != nil {
 		_ = c.conn.Close()
 	}
+	if c.restClient != nil {
+		c.restClient.CloseIdleConnections()
+	}
 	close(c.closeNotif)
 	close(c.recvNotif)
 	close(c.sendNotif)
@@ -368,10 +374,6 @@ func (c *Client) close(err error) error {
 }
 
 func (c *Client) Close() error {
-	c.sendMutex.Lock()
-	defer c.sendMutex.Unlock()
-	c.recvMutex.Lock()
-	defer c.recvMutex.Unlock()
 	c.closeMutex.Lock()
 	defer c.closeMutex.Unlock()
 	if c.active {
@@ -379,7 +381,22 @@ func (c *Client) Close() error {
 		if c.conn != nil {
 			_ = c.conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(c.timeout))
 		}
-		return c.close(nil)
+		if c.restClient != nil {
+			dRestClient := &http.Client{Timeout: c.timeout}
+			defer dRestClient.CloseIdleConnections()
+			req, err := http.NewRequest(http.MethodDelete, c.restTargetURL, nil)
+			if err != nil {
+				return c.close(err)
+			}
+			rsp, err := dRestClient.Do(req)
+			if err != nil {
+				return c.close(err)
+			}
+			defer func() { _, _ = io.Copy(ioutil.Discard, rsp.Body); _ = rsp.Body.Close() }()
+			return c.close(nil)
+		} else {
+			return c.close(nil)
+		}
 	}
 	return nil
 }

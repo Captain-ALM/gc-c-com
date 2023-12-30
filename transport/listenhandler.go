@@ -62,6 +62,8 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		hndl := &Handler{
 			ID: nID.String() + "-" + request.RemoteAddr,
 			closeEvent: func(t Transport, e error) {
+				l.handlerMutex.Lock()
+				defer l.handlerMutex.Unlock()
 				delete(l.handlerMap, t.GetID())
 				l.closeEvent(t, e)
 			},

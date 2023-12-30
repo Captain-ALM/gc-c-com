@@ -43,6 +43,8 @@ func (l *ListenWebsocket) ServeHTTP(writer http.ResponseWriter, request *http.Re
 		socket := &Websocket{
 			ID: nID.String() + "-" + conn.NetConn().RemoteAddr().String(),
 			closeEvent: func(t Transport, e error) {
+				l.socketMutex.Lock()
+				defer l.socketMutex.Unlock()
 				delete(l.socketMap, t.GetID())
 				l.closeEvent(t, e)
 			},

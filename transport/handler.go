@@ -20,6 +20,7 @@ type Handler struct {
 	recvNotif  chan [][]byte
 	recvBuffer [][]byte
 	timeout    time.Duration
+	closeMutex *sync.Mutex
 }
 
 func (h *Handler) Activate() {
@@ -28,6 +29,7 @@ func (h *Handler) Activate() {
 	}
 	h.sendMutex = &sync.Mutex{}
 	h.recvMutex = &sync.Mutex{}
+	h.closeMutex = &sync.Mutex{}
 	h.sendBuffer = nil
 	h.recvBuffer = nil
 	h.recvNotif = make(chan [][]byte)
@@ -44,8 +46,16 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	}
 	if request.Method == http.MethodGet || request.Method == http.MethodPost {
 		h.sendResponse(writer, hasPing)
+	} else if request.Method == http.MethodDelete {
+		h.closeMutex.Lock()
+		defer h.closeMutex.Unlock()
+		if h.active {
+			h.active = false
+			_ = h.close(errors.New("handler closed remotely "))
+		}
+		writer.WriteHeader(http.StatusAccepted)
 	} else if request.Method == http.MethodOptions {
-		writer.Header().Set("Allow", http.MethodOptions+", "+http.MethodGet+", "+http.MethodPost)
+		writer.Header().Set("Allow", http.MethodOptions+", "+http.MethodGet+", "+http.MethodPost+", "+http.MethodDelete)
 		writer.WriteHeader(http.StatusOK)
 	} else {
 		writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -101,6 +111,8 @@ func (h *Handler) sendResponse(response http.ResponseWriter, needPong bool) {
 		for _, bytes := range h.sendBuffer {
 			_, err := response.Write(bytes)
 			if err != nil {
+				h.closeMutex.Lock()
+				defer h.closeMutex.Unlock()
 				if h.active {
 					h.active = false
 					_ = h.close(err)
@@ -109,6 +121,8 @@ func (h *Handler) sendResponse(response http.ResponseWriter, needPong bool) {
 			}
 			_, err = response.Write([]byte("\r\n"))
 			if err != nil {
+				h.closeMutex.Lock()
+				defer h.closeMutex.Unlock()
 				if h.active {
 					h.active = false
 					_ = h.close(err)
@@ -169,6 +183,8 @@ func (h *Handler) Receive() (*packet.Packet, error) {
 			h.recvBuffer = append(h.recvBuffer, pl...)
 			break
 		case <-tOut.C:
+			h.closeMutex.Lock()
+			defer h.closeMutex.Unlock()
 			if h.active {
 				h.active = false
 				_ = h.close(errors.New("handler receive timeout"))
@@ -198,10 +214,8 @@ func (h *Handler) Close() error {
 	if h == nil {
 		return nil
 	}
-	h.sendMutex.Lock()
-	defer h.sendMutex.Unlock()
-	h.recvMutex.Lock()
-	defer h.recvMutex.Unlock()
+	h.closeMutex.Lock()
+	defer h.closeMutex.Unlock()
 	if h.active {
 		h.active = false
 		return h.close(nil)
