@@ -8,12 +8,12 @@ import (
 // ID Sent signed from master server to app server; sent unsigned the other way
 const ID = "id"
 
-func NewID(id int, key *rsa.PrivateKey) (*packet.Packet, error) {
+func NewID(id uint32, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(ID, &IDPayload{id}, key)
 }
 
 type IDPayload struct {
-	ID int `json:"i"`
+	ID uint32 `json:"i"`
 }
 
-//This payload is also used by QuizRequest and QuizDelete
+//This payload is also used by IDGuest, KickGuest, QuizRequest and QuizDelete

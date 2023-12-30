@@ -8,7 +8,7 @@ import (
 // QuizUpload Sent from web client to app server
 const QuizUpload = "uquiz"
 
-func NewQuizUpload(id int, name string, questions QuizQuestions, answers QuizAnswers, key *rsa.PrivateKey) (*packet.Packet, error) {
+func NewQuizUpload(id uint32, name string, questions QuizQuestions, answers QuizAnswers, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(QuizUpload, &QuizDataPayload{id, name, questions, answers}, key)
 }
 

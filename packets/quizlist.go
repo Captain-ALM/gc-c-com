@@ -17,7 +17,7 @@ type QuizListPayload struct {
 }
 
 type QuizListEntry struct {
-	ID     int    `json:"i"`
+	ID     uint32 `json:"i"`
 	Name   string `json:"n"`
 	Mine   bool   `json:"m"`
 	Public bool   `json:"p"`

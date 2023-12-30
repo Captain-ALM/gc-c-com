@@ -8,7 +8,7 @@ import (
 // QuizDelete Sent from web client to app server
 const QuizDelete = "dquiz"
 
-func NewQuizDelete(id int, key *rsa.PrivateKey) (*packet.Packet, error) {
+func NewQuizDelete(id uint32, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(QuizDelete, &IDPayload{id}, key)
 }
 

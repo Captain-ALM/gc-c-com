@@ -8,11 +8,11 @@ import (
 // QuizVisibility Sent from web client to app server
 const QuizVisibility = "vquiz"
 
-func NewQuizVisibility(id int, isPublic bool, key *rsa.PrivateKey) (*packet.Packet, error) {
+func NewQuizVisibility(id uint32, isPublic bool, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(QuizVisibility, &QuizVisibilityPayload{id, isPublic}, key)
 }
 
 type QuizVisibilityPayload struct {
-	ID     int  `json:"i"`
-	Public bool `json:"p"`
+	ID     uint32 `json:"i"`
+	Public bool   `json:"p"`
 }

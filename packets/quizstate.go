@@ -9,12 +9,12 @@ import (
 // QuizState Sent from app server to web client
 const QuizState = "qstat"
 
-func NewQuizState(id int, state EnumQuizState, key *rsa.PrivateKey) (*packet.Packet, error) {
+func NewQuizState(id uint32, state EnumQuizState, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(QuizState, &QuizStatePayload{id, state}, key)
 }
 
 type QuizStatePayload struct {
-	ID    int           `json:"i"`
+	ID    uint32        `json:"i"`
 	State EnumQuizState `json:"s"`
 }
 

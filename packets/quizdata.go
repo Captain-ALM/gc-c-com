@@ -8,12 +8,12 @@ import (
 // QuizData Sent from app server to web client
 const QuizData = "quiz"
 
-func NewQuizData(id int, name string, questions QuizQuestions, answers QuizAnswers, key *rsa.PrivateKey) (*packet.Packet, error) {
+func NewQuizData(id uint32, name string, questions QuizQuestions, answers QuizAnswers, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(QuizData, &QuizDataPayload{id, name, questions, answers}, key)
 }
 
 type QuizDataPayload struct {
-	ID        int           `json:"i"`
+	ID        uint32        `json:"i"`
 	Name      string        `json:"n"`
 	Questions QuizQuestions `json:"q"`
 	Answers   QuizAnswers   `json:"a"`
@@ -37,13 +37,13 @@ type QuizAnswers struct {
 }
 
 type QuizAnswerSet struct {
-	CorrectAnswer int          `json:"ca"`
+	CorrectAnswer uint32       `json:"ca"`
 	Answers       []QuizAnswer `json:"as"`
 }
 
 type QuizAnswer struct {
 	Answer string `json:"a"`
-	Color  int    `json:"c"`
+	Color  uint32 `json:"c"`
 }
 
 //QuizAnswer is also used by GameQuestion
