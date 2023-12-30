@@ -38,9 +38,15 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if !h.IsActive() {
 		return
 	}
-	hasPing := h.receiveRequest(request)
+	hasPing := false
+	if request.Method != http.MethodOptions {
+		hasPing = h.receiveRequest(request)
+	}
 	if request.Method == http.MethodGet || request.Method == http.MethodPost {
 		h.sendResponse(writer, hasPing)
+	} else if request.Method == http.MethodOptions {
+		writer.Header().Set("Allow", http.MethodOptions+", "+http.MethodGet+", "+http.MethodPost)
+		writer.WriteHeader(http.StatusOK)
 	} else {
 		writer.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -86,7 +92,7 @@ func (h *Handler) sendResponse(response http.ResponseWriter, needPong bool) {
 		response.WriteHeader(http.StatusAccepted)
 	} else {
 		response.Header().Set("Content-Length", strconv.Itoa(sz))
-		response.Header().Set("Content-Type", "text/plain")
+		response.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		response.WriteHeader(http.StatusOK)
 		defer func() { h.sendBuffer = nil }()
 		if len(thePong) > 0 {

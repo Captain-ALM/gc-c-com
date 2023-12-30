@@ -31,13 +31,16 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	if !l.IsActive() {
 		return
 	}
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	writer.Header().Set("Cache-Control", "max-age=0, no-cache, no-store, must-revalidate")
+	writer.Header().Set("Pragma", "no-cache")
 	if request.URL.Query().Has("s") {
 		chid := request.URL.Query().Get("s")
 		l.handlerMutex.Lock()
 		ch := l.handlerMap[chid]
 		l.handlerMutex.Unlock()
 		if ch == nil {
-			writer.Header().Set("Content-Type", "text/plain")
+			writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 			eMsg := "Session Not Found"
 			writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
 			writer.WriteHeader(http.StatusNotFound)
@@ -47,7 +50,7 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		ch.ServeHTTP(writer, request)
 	} else if request.Method == http.MethodGet {
 		nID, err := uuid.NewRandom()
-		writer.Header().Set("Content-Type", "text/plain")
+		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		if err != nil {
 			eMsg := "Internal Error: " + err.Error()
 			writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
@@ -72,6 +75,9 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		writer.Header().Set("Content-Length", strconv.Itoa(len(hndl.ID)))
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write([]byte(hndl.ID))
+	} else if request.Method == http.MethodOptions {
+		writer.Header().Set("Allow", http.MethodOptions+", "+http.MethodGet)
+		writer.WriteHeader(http.StatusOK)
 	} else {
 		writer.WriteHeader(http.StatusMethodNotAllowed)
 	}

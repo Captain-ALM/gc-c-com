@@ -63,7 +63,7 @@ func (c *Client) restStart(restURL string) bool {
 		return false
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.EqualFold(resp.Header.Get("Content-Type"), "text/plain") {
+	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
 		buff := make([]byte, resp.ContentLength)
 		ln, err := resp.Body.Read(buff)
 		if err != nil {
@@ -147,12 +147,12 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 				return true, false
 			}
 		}
-		resp, err = c.restClient.Post(c.restTargetURL, "text/plain", buff)
+		resp, err = c.restClient.Post(c.restTargetURL, "text/plain; charset=utf-8", buff)
 	}
 	if err != nil {
 		return true, false
 	}
-	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.EqualFold(resp.Header.Get("Content-Type"), "text/plain") {
+	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
 		hasPing = false
 		bScan := bufio.NewScanner(resp.Body)
 		var rIn [][]byte
