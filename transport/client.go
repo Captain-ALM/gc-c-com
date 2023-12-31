@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.local/gc-c-com/packet"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -64,7 +63,7 @@ func (c *Client) restStart(restURL string) bool {
 	if err != nil {
 		return false
 	}
-	defer func() { _, _ = io.Copy(ioutil.Discard, resp.Body); _ = resp.Body.Close() }()
+	defer func() { _, _ = io.Copy(io.Discard, resp.Body); _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
 		buff := make([]byte, resp.ContentLength)
 		ln, err := resp.Body.Read(buff)
@@ -132,7 +131,7 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 	var resp *http.Response
 	var err error
 	defer func() {
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
 		c.sendBuffer = nil
 	}()
@@ -281,7 +280,10 @@ func (c *Client) wsKeepAliveStart() {
 		defer kAlive.Stop()
 		for c.active {
 			_ = c.Send(packet.NewPing())
-			kAlive.Reset(c.keepAlive)
+			kaVal := c.keepAlive
+			if kaVal > 0 {
+				kAlive.Reset(kaVal)
+			}
 			select {
 			case <-kAlive.C:
 			case <-c.kaNotif:
@@ -330,21 +332,8 @@ func (c *Client) Receive() (*packet.Packet, error) {
 	c.recvMutex.Lock()
 	defer c.recvMutex.Unlock()
 	if len(c.recvBuffer) < 1 {
-		tOut := time.NewTimer(c.timeout)
-		defer tOut.Stop()
-		select {
-		case pl := <-c.recvNotif:
-			c.recvBuffer = append(c.recvBuffer, pl...)
-			break
-		case <-tOut.C:
-			c.closeMutex.Lock()
-			defer c.closeMutex.Unlock()
-			if c.active {
-				c.active = false
-				_ = c.close(errors.New("client receive timeout"))
-			}
-			return nil, errors.New("client receive timeout")
-		}
+		pl := <-c.recvNotif
+		c.recvBuffer = append(c.recvBuffer, pl...)
 	}
 	if len(c.recvBuffer) > 0 {
 		var tr []byte
@@ -392,7 +381,7 @@ func (c *Client) Close() error {
 			if err != nil {
 				return c.close(err)
 			}
-			defer func() { _, _ = io.Copy(ioutil.Discard, rsp.Body); _ = rsp.Body.Close() }()
+			defer func() { _, _ = io.Copy(io.Discard, rsp.Body); _ = rsp.Body.Close() }()
 			return c.close(nil)
 		} else {
 			return c.close(nil)

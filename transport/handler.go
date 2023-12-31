@@ -19,6 +19,7 @@ type Handler struct {
 	recvMutex  *sync.Mutex
 	recvNotif  chan [][]byte
 	recvBuffer [][]byte
+	connNotif  chan bool
 	timeout    time.Duration
 	closeMutex *sync.Mutex
 }
@@ -33,13 +34,54 @@ func (h *Handler) Activate() {
 	h.sendBuffer = nil
 	h.recvBuffer = nil
 	h.recvNotif = make(chan [][]byte)
+	h.connNotif = make(chan bool)
 	h.active = true
+	go func() {
+		ctOut := h.timeout
+		tOut := time.NewTimer(ctOut)
+		defer func() {
+			if !tOut.Stop() {
+				select {
+				case <-tOut.C:
+				default:
+				}
+			}
+		}()
+		for h.active {
+			select {
+			case valid := <-h.connNotif:
+				ctOut = h.timeout
+				if valid {
+					if !tOut.Stop() {
+						select {
+						case <-tOut.C:
+						default:
+						}
+					}
+					tOut.Reset(ctOut)
+				} else {
+					<-tOut.C
+					tOut.Reset(ctOut)
+				}
+			case <-tOut.C:
+				h.closeMutex.Lock()
+				defer h.closeMutex.Unlock()
+				if h.active {
+					h.active = false
+					_ = h.close(errors.New("handler timeout"))
+				}
+				return
+			}
+		}
+	}()
 }
 
 func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if !h.IsActive() {
 		return
 	}
+	h.connNotif <- true
+	defer func() { h.connNotif <- true }()
 	hasPing := false
 	if request.Method != http.MethodOptions {
 		hasPing = h.receiveRequest(request)
@@ -51,7 +93,7 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 		defer h.closeMutex.Unlock()
 		if h.active {
 			h.active = false
-			_ = h.close(errors.New("handler closed remotely "))
+			_ = h.close(errors.New("handler closed remotely"))
 		}
 		writer.WriteHeader(http.StatusAccepted)
 	} else if request.Method == http.MethodOptions {
@@ -176,21 +218,8 @@ func (h *Handler) Receive() (*packet.Packet, error) {
 	h.recvMutex.Lock()
 	defer h.recvMutex.Unlock()
 	if len(h.recvBuffer) < 1 {
-		tOut := time.NewTimer(h.timeout)
-		defer tOut.Stop()
-		select {
-		case pl := <-h.recvNotif:
-			h.recvBuffer = append(h.recvBuffer, pl...)
-			break
-		case <-tOut.C:
-			h.closeMutex.Lock()
-			defer h.closeMutex.Unlock()
-			if h.active {
-				h.active = false
-				_ = h.close(errors.New("handler receive timeout"))
-			}
-			return nil, errors.New("handler receive timeout")
-		}
+		pl := <-h.recvNotif
+		h.recvBuffer = append(h.recvBuffer, pl...)
 	}
 	if len(h.recvBuffer) > 0 {
 		var tr []byte
@@ -202,6 +231,7 @@ func (h *Handler) Receive() (*packet.Packet, error) {
 
 func (h *Handler) close(err error) error {
 	close(h.recvNotif)
+	close(h.connNotif)
 	if h.closeEvent != nil {
 		h.closeEvent(h, err)
 	}
@@ -235,6 +265,9 @@ func (h *Handler) SetTimeout(to time.Duration) {
 		return
 	}
 	h.timeout = to
+	if h.active {
+		h.connNotif <- false
+	}
 }
 
 func (h *Handler) GetTimeout() time.Duration {
