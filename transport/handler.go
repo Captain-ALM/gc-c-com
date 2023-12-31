@@ -13,7 +13,7 @@ import (
 type Handler struct {
 	ID         string
 	active     bool
-	closeEvent CloseCallback
+	closeEvent func(t Transport, e error)
 	sendMutex  *sync.Mutex
 	sendBuffer [][]byte
 	recvMutex  *sync.Mutex
@@ -223,7 +223,7 @@ func (h *Handler) Close() error {
 	return nil
 }
 
-func (h *Handler) SetOnClose(callback CloseCallback) {
+func (h *Handler) SetOnClose(callback func(t Transport, e error)) {
 	if h == nil || callback == nil {
 		return
 	}

@@ -11,10 +11,10 @@ import (
 
 type ListenWebsocket struct {
 	active       bool
-	connectEvent ConnectCallback
+	connectEvent func(l Listener, t Transport) Transport
 	socketMap    map[string]*Websocket
 	socketMutex  *sync.Mutex
-	closeEvent   CloseCallback
+	closeEvent   func(t Transport, e error)
 	timeout      time.Duration
 	Upgrader     websocket.Upgrader
 }
@@ -71,14 +71,14 @@ func (l *ListenWebsocket) Close() error {
 	return err
 }
 
-func (l *ListenWebsocket) SetOnConnect(callback ConnectCallback) {
+func (l *ListenWebsocket) SetOnConnect(callback func(l Listener, t Transport) Transport) {
 	if l == nil || callback == nil {
 		return
 	}
 	l.connectEvent = callback
 }
 
-func (l *ListenWebsocket) SetOnClose(callback CloseCallback) {
+func (l *ListenWebsocket) SetOnClose(callback func(t Transport, e error)) {
 	if l == nil || callback == nil {
 		return
 	}

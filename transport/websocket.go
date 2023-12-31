@@ -11,7 +11,7 @@ import (
 type Websocket struct {
 	ID         string
 	active     bool
-	closeEvent CloseCallback
+	closeEvent func(t Transport, e error)
 	conn       *websocket.Conn
 	recvNotif  chan []byte
 	sendNotif  chan []byte
@@ -168,7 +168,7 @@ func (w *Websocket) Close() error {
 	return nil
 }
 
-func (w *Websocket) SetOnClose(callback CloseCallback) {
+func (w *Websocket) SetOnClose(callback func(t Transport, e error)) {
 	if w == nil || callback == nil {
 		return
 	}

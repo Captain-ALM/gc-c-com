@@ -11,10 +11,10 @@ import (
 
 type ListenHandler struct {
 	active       bool
-	connectEvent ConnectCallback
+	connectEvent func(l Listener, t Transport) Transport
 	handlerMap   map[string]*Handler
 	handlerMutex *sync.Mutex
-	closeEvent   CloseCallback
+	closeEvent   func(t Transport, e error)
 	timeout      time.Duration
 }
 
@@ -98,14 +98,14 @@ func (l *ListenHandler) Close() error {
 	return err
 }
 
-func (l *ListenHandler) SetOnConnect(callback ConnectCallback) {
+func (l *ListenHandler) SetOnConnect(callback func(l Listener, t Transport) Transport) {
 	if l == nil || callback == nil {
 		return
 	}
 	l.connectEvent = callback
 }
 
-func (l *ListenHandler) SetOnClose(callback CloseCallback) {
+func (l *ListenHandler) SetOnClose(callback func(t Transport, e error)) {
 	if l == nil || callback == nil {
 		return
 	}

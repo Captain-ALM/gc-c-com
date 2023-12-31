@@ -33,7 +33,7 @@ type Client struct {
 	kaNotif       chan bool
 	timeout       time.Duration
 	active        bool
-	closeEvent    CloseCallback
+	closeEvent    func(t Transport, e error)
 }
 
 func (c *Client) Activate(wsURL string, restURL string) {
@@ -401,7 +401,7 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) SetOnClose(callback CloseCallback) {
+func (c *Client) SetOnClose(callback func(t Transport, e error)) {
 	if c == nil {
 		return
 	}
