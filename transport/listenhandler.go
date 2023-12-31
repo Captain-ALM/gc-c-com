@@ -132,12 +132,12 @@ func (l *ListenHandler) SetTimeout(to time.Duration) {
 	if l == nil {
 		return
 	}
-	l.timeout = to
 	if !l.IsActive() {
 		return
 	}
 	l.handlerMutex.Lock()
 	defer l.handlerMutex.Unlock()
+	l.timeout = to
 	for _, handler := range l.handlerMap {
 		handler.SetTimeout(to)
 	}

@@ -105,12 +105,12 @@ func (l *ListenWebsocket) SetTimeout(to time.Duration) {
 	if l == nil {
 		return
 	}
-	l.timeout = to
 	if !l.IsActive() {
 		return
 	}
 	l.socketMutex.Lock()
 	defer l.socketMutex.Unlock()
+	l.timeout = to
 	for _, socket := range l.socketMap {
 		socket.SetTimeout(to)
 	}
