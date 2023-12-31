@@ -2,6 +2,8 @@ package transport
 
 import "time"
 
+type ConnectCallback = func(l Listener, t Transport) Transport
+
 type Listener interface {
 	IsActive() bool
 	Close() error
@@ -11,5 +13,3 @@ type Listener interface {
 	SetTimeout(to time.Duration)
 	GetTimeout() time.Duration
 }
-
-type ConnectCallback = func(l Listener, t Transport) Transport

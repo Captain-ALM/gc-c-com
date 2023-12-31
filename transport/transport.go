@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type CloseCallback = func(t Transport, e error)
+
 type Transport interface {
 	GetID() string
 	IsActive() bool
@@ -15,5 +17,3 @@ type Transport interface {
 	SetTimeout(to time.Duration)
 	GetTimeout() time.Duration
 }
-
-type CloseCallback = func(t Transport, e error)
