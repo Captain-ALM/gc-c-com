@@ -42,6 +42,8 @@ const (
 	EnumAuthStatusLoggedOut
 	EnumAuthStatusSignedIn = EnumAuthStatus("active")
 	EnumAuthStatusLoggedIn
-	EnumAuthStatusAccepted = EnumAuthStatus("accepted")
-	EnumAuthStatusRejected = EnumAuthStatus("rejected")
+	EnumAuthStatusAcceptedJWT  = EnumAuthStatus("acceptedjwt")
+	EnumAuthStatusRejectedJWT  = EnumAuthStatus("rejectedjwt")
+	EnumAuthStatusAcceptedHash = EnumAuthStatus("acceptedhsh")
+	EnumAuthStatusRejectedHash = EnumAuthStatus("rejectedhsh")
 )
