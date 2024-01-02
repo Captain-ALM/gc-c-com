@@ -6,9 +6,10 @@ import (
 	"time"
 )
 
-func NewMultiListener(listeners []Listener, onConnect func(l Listener, t Transport) Transport, onClose func(t Transport, e error), timeout time.Duration) *MultiListener {
+func NewMultiListener(listeners []Listener, onAccept func(l Listener, t Transport) Transport, onConnect func(l Listener, t Transport), onClose func(t Transport, e error), timeout time.Duration) *MultiListener {
 	mL := &MultiListener{
 		init:          true,
+		acceptEvent:   onAccept,
 		connectEvent:  onConnect,
 		closeEvent:    onClose,
 		listeners:     listeners,
@@ -16,7 +17,7 @@ func NewMultiListener(listeners []Listener, onConnect func(l Listener, t Transpo
 		timeout:       timeout,
 	}
 	for _, cl := range listeners {
-		cl.SetOnConnect(onConnect)
+		cl.SetOnAccept(onAccept)
 		cl.SetOnClose(onClose)
 		cl.SetTimeout(timeout)
 	}
@@ -25,7 +26,8 @@ func NewMultiListener(listeners []Listener, onConnect func(l Listener, t Transpo
 
 type MultiListener struct {
 	init          bool
-	connectEvent  func(l Listener, t Transport) Transport
+	acceptEvent   func(l Listener, t Transport) Transport
+	connectEvent  func(l Listener, t Transport)
 	closeEvent    func(t Transport, e error)
 	listeners     []Listener
 	listenerMutex *sync.Mutex
@@ -55,7 +57,19 @@ func (m *MultiListener) Close() error {
 	return toRet
 }
 
-func (m *MultiListener) SetOnConnect(callback func(l Listener, t Transport) Transport) {
+func (m *MultiListener) SetOnAccept(callback func(l Listener, t Transport) Transport) {
+	if m == nil || !m.init || callback == nil {
+		return
+	}
+	m.listenerMutex.Lock()
+	defer m.listenerMutex.Unlock()
+	m.acceptEvent = callback
+	for _, cl := range m.listeners {
+		cl.SetOnAccept(callback)
+	}
+}
+
+func (m *MultiListener) SetOnConnect(callback func(l Listener, t Transport)) {
 	if m == nil || !m.init || callback == nil {
 		return
 	}

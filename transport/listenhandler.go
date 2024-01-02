@@ -11,7 +11,8 @@ import (
 
 type ListenHandler struct {
 	active       bool
-	connectEvent func(l Listener, t Transport) Transport
+	acceptEvent  func(l Listener, t Transport) Transport
+	connectEvent func(l Listener, t Transport)
 	handlerMap   map[string]*Handler
 	handlerMutex *sync.Mutex
 	closeEvent   func(t Transport, e error)
@@ -56,6 +57,7 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 			writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
 			writer.WriteHeader(http.StatusInternalServerError)
 			_, _ = writer.Write([]byte(eMsg))
+			return
 		}
 		l.handlerMutex.Lock()
 		defer l.handlerMutex.Unlock()
@@ -69,11 +71,21 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 			},
 			timeout: l.timeout,
 		}
-		if l.connectEvent != nil {
-			hndl = l.connectEvent(l, hndl).(*Handler)
+		if l.acceptEvent != nil {
+			hndl = l.acceptEvent(l, hndl).(*Handler)
+		}
+		if hndl == nil {
+			eMsg := "Client Rejected"
+			writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
+			writer.WriteHeader(http.StatusNotAcceptable)
+			_, _ = writer.Write([]byte(eMsg))
+			return
 		}
 		l.handlerMap[hndl.ID] = hndl
 		hndl.Activate()
+		if l.connectEvent != nil {
+			l.connectEvent(l, hndl)
+		}
 		writer.Header().Set("Content-Length", strconv.Itoa(len(hndl.ID)))
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write([]byte(hndl.ID))
@@ -98,7 +110,14 @@ func (l *ListenHandler) Close() error {
 	return err
 }
 
-func (l *ListenHandler) SetOnConnect(callback func(l Listener, t Transport) Transport) {
+func (l *ListenHandler) SetOnAccept(callback func(l Listener, t Transport) Transport) {
+	if l == nil || callback == nil {
+		return
+	}
+	l.acceptEvent = callback
+}
+
+func (l *ListenHandler) SetOnConnect(callback func(l Listener, t Transport)) {
 	if l == nil || callback == nil {
 		return
 	}

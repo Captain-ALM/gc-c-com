@@ -11,7 +11,8 @@ import (
 
 type ListenWebsocket struct {
 	active       bool
-	connectEvent func(l Listener, t Transport) Transport
+	acceptEvent  func(l Listener, t Transport) Transport
+	connectEvent func(l Listener, t Transport)
 	socketMap    map[string]*Websocket
 	socketMutex  *sync.Mutex
 	closeEvent   func(t Transport, e error)
@@ -50,11 +51,18 @@ func (l *ListenWebsocket) ServeHTTP(writer http.ResponseWriter, request *http.Re
 			},
 			timeout: l.timeout,
 		}
-		if l.connectEvent != nil {
-			socket = l.connectEvent(l, socket).(*Websocket)
+		if l.acceptEvent != nil {
+			socket = l.acceptEvent(l, socket).(*Websocket)
+		}
+		if socket == nil {
+			_ = conn.Close()
+			return
 		}
 		l.socketMap[socket.ID] = socket
 		socket.Activate(conn)
+		if l.connectEvent != nil {
+			l.connectEvent(l, socket)
+		}
 	}
 }
 
@@ -71,7 +79,14 @@ func (l *ListenWebsocket) Close() error {
 	return err
 }
 
-func (l *ListenWebsocket) SetOnConnect(callback func(l Listener, t Transport) Transport) {
+func (l *ListenWebsocket) SetOnAccept(callback func(l Listener, t Transport) Transport) {
+	if l == nil || callback == nil {
+		return
+	}
+	l.acceptEvent = callback
+}
+
+func (l *ListenWebsocket) SetOnConnect(callback func(l Listener, t Transport)) {
 	if l == nil || callback == nil {
 		return
 	}
