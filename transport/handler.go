@@ -11,23 +11,25 @@ import (
 )
 
 type Handler struct {
-	ID         string
-	active     bool
-	closeEvent func(t Transport, e error)
-	sendMutex  *sync.Mutex
-	sendBuffer [][]byte
-	recvMutex  *sync.Mutex
-	recvNotif  chan [][]byte
-	recvBuffer [][]byte
-	connNotif  chan bool
-	timeout    time.Duration
-	closeMutex *sync.Mutex
+	ID            string
+	active        bool
+	closeEvent    func(t Transport, e error)
+	sendMutex     *sync.Mutex
+	sendBuffer    [][]byte
+	recvMutex     *sync.Mutex
+	recvNotif     chan [][]byte
+	recvBuffer    [][]byte
+	connNotif     chan bool
+	timeout       time.Duration
+	closeMutex    *sync.Mutex
+	closedChannel chan bool
 }
 
 func (h *Handler) Activate() {
 	if h == nil || h.IsActive() {
 		return
 	}
+	h.closedChannel = make(chan bool)
 	h.sendMutex = &sync.Mutex{}
 	h.recvMutex = &sync.Mutex{}
 	h.closeMutex = &sync.Mutex{}
@@ -49,6 +51,8 @@ func (h *Handler) Activate() {
 		}()
 		for h.active {
 			select {
+			case <-h.closedChannel:
+				return
 			case valid := <-h.connNotif:
 				ctOut = h.timeout
 				if valid {
@@ -60,8 +64,12 @@ func (h *Handler) Activate() {
 					}
 					tOut.Reset(ctOut)
 				} else {
-					<-tOut.C
-					tOut.Reset(ctOut)
+					select {
+					case <-h.closedChannel:
+						return
+					case <-tOut.C:
+						tOut.Reset(ctOut)
+					}
 				}
 			case <-tOut.C:
 				h.closeMutex.Lock()
@@ -80,8 +88,18 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if !h.IsActive() {
 		return
 	}
-	h.connNotif <- true
-	defer func() { h.connNotif <- true }()
+	select {
+	case <-h.closedChannel:
+		return
+	case h.connNotif <- true:
+	}
+	defer func() {
+		select {
+		case <-h.closedChannel:
+			return
+		case h.connNotif <- true:
+		}
+	}()
 	hasPing := false
 	if request.Method != http.MethodOptions {
 		hasPing = h.receiveRequest(request)
@@ -123,7 +141,11 @@ func (h *Handler) receiveRequest(request *http.Request) bool {
 			rIn = append(rIn, cR)
 		}
 	}
-	h.recvNotif <- rIn
+	select {
+	case <-h.closedChannel:
+		return hasPing
+	case h.recvNotif <- rIn:
+	}
 	return hasPing
 }
 
@@ -218,8 +240,12 @@ func (h *Handler) Receive() (*packet.Packet, error) {
 	h.recvMutex.Lock()
 	defer h.recvMutex.Unlock()
 	if len(h.recvBuffer) < 1 {
-		pl := <-h.recvNotif
-		h.recvBuffer = append(h.recvBuffer, pl...)
+		select {
+		case <-h.closedChannel:
+			return nil, errors.New("handler closed")
+		case pl := <-h.recvNotif:
+			h.recvBuffer = append(h.recvBuffer, pl...)
+		}
 	}
 	if len(h.recvBuffer) > 0 {
 		var tr []byte
@@ -230,8 +256,9 @@ func (h *Handler) Receive() (*packet.Packet, error) {
 }
 
 func (h *Handler) close(err error) error {
-	close(h.recvNotif)
-	close(h.connNotif)
+	close(h.closedChannel)
+	//close(h.recvNotif)
+	//close(h.connNotif)
 	if h.closeEvent != nil {
 		h.closeEvent(h, err)
 	}
@@ -266,7 +293,11 @@ func (h *Handler) SetTimeout(to time.Duration) {
 	}
 	h.timeout = to
 	if h.active {
-		h.connNotif <- false
+		select {
+		case <-h.closedChannel:
+			return
+		case h.connNotif <- false:
+		}
 	}
 }
 

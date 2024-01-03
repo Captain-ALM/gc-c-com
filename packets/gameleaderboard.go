@@ -8,14 +8,12 @@ import (
 // GameLeaderboard Sent from app server to web client
 const GameLeaderboard = "lgame"
 
-func NewGameLeaderboard(score uint32, streak uint32, entries []GameLeaderboardEntry, key *rsa.PrivateKey) (*packet.Packet, error) {
-	return packet.New(GameLeaderboard, &GameLeaderboardPayload{score, streak, entries}, key)
+func NewGameLeaderboard(entries []GameLeaderboardEntry, key *rsa.PrivateKey) (*packet.Packet, error) {
+	return packet.New(GameLeaderboard, &GameLeaderboardPayload{entries}, key)
 }
 
 type GameLeaderboardPayload struct {
-	MyScore  uint32                 `json:"s"`
-	MyStreak uint32                 `json:"t,omitempty"`
-	Entries  []GameLeaderboardEntry `json:"e"`
+	Entries []GameLeaderboardEntry `json:"e"`
 }
 
 type GameLeaderboardEntry struct {

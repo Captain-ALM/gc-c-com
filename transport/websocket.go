@@ -9,14 +9,15 @@ import (
 )
 
 type Websocket struct {
-	ID         string
-	active     bool
-	closeEvent func(t Transport, e error)
-	conn       *websocket.Conn
-	recvNotif  chan []byte
-	sendNotif  chan []byte
-	timeout    time.Duration
-	closeMutex *sync.Mutex
+	ID            string
+	active        bool
+	closeEvent    func(t Transport, e error)
+	conn          *websocket.Conn
+	recvNotif     chan []byte
+	sendNotif     chan []byte
+	timeout       time.Duration
+	closeMutex    *sync.Mutex
+	closedChannel chan bool
 }
 
 func (w *Websocket) Activate(conn *websocket.Conn) {
@@ -24,6 +25,7 @@ func (w *Websocket) Activate(conn *websocket.Conn) {
 		return
 	}
 	w.conn = conn
+	w.closedChannel = make(chan bool)
 	w.closeMutex = &sync.Mutex{}
 	w.recvNotif = make(chan []byte)
 	w.sendNotif = make(chan []byte)
@@ -55,19 +57,31 @@ func (w *Websocket) Activate(conn *websocket.Conn) {
 			if len(recvBuff) < 1 && msg[len(msg)-1] == '\n' {
 				switch packet.GetCommandIgnoreError(msg) {
 				case packet.Ping:
-					w.sendNotif <- packet.NewPong().ToBytesIgnoreError()
+					select {
+					case <-w.closedChannel:
+					case w.sendNotif <- packet.NewPong().ToBytesIgnoreError():
+					}
 				case packet.Pong:
 				default:
-					w.recvNotif <- msg
+					select {
+					case <-w.closedChannel:
+					case w.recvNotif <- msg:
+					}
 				}
 			} else if len(recvBuff) > 0 && msg[len(msg)-1] == '\n' {
 				recvBuff = append(recvBuff, msg...)
 				switch packet.GetCommandIgnoreError(recvBuff) {
 				case packet.Ping:
-					w.sendNotif <- packet.NewPong().ToBytesIgnoreError()
+					select {
+					case <-w.closedChannel:
+					case w.sendNotif <- packet.NewPong().ToBytesIgnoreError():
+					}
 				case packet.Pong:
 				default:
-					w.recvNotif <- recvBuff
+					select {
+					case <-w.closedChannel:
+					case w.recvNotif <- recvBuff:
+					}
 				}
 				recvBuff = nil
 			} else {
@@ -88,20 +102,21 @@ func (w *Websocket) Activate(conn *websocket.Conn) {
 				}
 				return
 			}
-			msg, ok := <-w.sendNotif
-			if !ok {
+			select {
+			case <-w.closedChannel:
 				_ = w.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
-			}
-			err = w.conn.WriteMessage(websocket.TextMessage, append(msg, []byte("\r\n")...))
-			if err != nil {
-				w.closeMutex.Lock()
-				defer w.closeMutex.Unlock()
-				if w.active {
-					w.active = false
-					_ = w.close(err)
+			case msg := <-w.sendNotif:
+				err = w.conn.WriteMessage(websocket.TextMessage, append(msg, []byte("\r\n")...))
+				if err != nil {
+					w.closeMutex.Lock()
+					defer w.closeMutex.Unlock()
+					if w.active {
+						w.active = false
+						_ = w.close(err)
+					}
+					return
 				}
-				return
 			}
 		}
 	}()
@@ -129,7 +144,10 @@ func (w *Websocket) Send(p *packet.Packet) error {
 	if err != nil {
 		return err
 	}
-	w.sendNotif <- bts
+	select {
+	case <-w.closedChannel:
+	case w.sendNotif <- bts:
+	}
 	return nil
 }
 
@@ -137,17 +155,19 @@ func (w *Websocket) Receive() (*packet.Packet, error) {
 	if !w.IsActive() {
 		return nil, errors.New("websocket not active")
 	}
-	msg, ok := <-w.recvNotif
-	if !ok {
+	select {
+	case <-w.closedChannel:
 		return nil, errors.New("websocket not active")
+	case msg := <-w.recvNotif:
+		return packet.From(msg)
 	}
-	return packet.From(msg)
 }
 
 func (w *Websocket) close(err error) error {
 	_ = w.conn.Close()
-	close(w.recvNotif)
-	close(w.sendNotif)
+	close(w.closedChannel)
+	//close(w.recvNotif)
+	//close(w.sendNotif)
 	if w.closeEvent != nil {
 		w.closeEvent(w, err)
 	}

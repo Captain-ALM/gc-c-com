@@ -76,10 +76,11 @@ func (c *Client) restStart(restURL string) bool {
 		}
 		go func() {
 			for c.active {
-				bts, ok := <-c.sendNotif
-				c.appendToSendBuffer(bts)
-				if !ok {
+				select {
+				case <-c.closeNotif:
 					return
+				case bts := <-c.sendNotif:
+					c.appendToSendBuffer(bts)
 				}
 			}
 		}()
@@ -98,7 +99,10 @@ func (c *Client) restStart(restURL string) bool {
 					}
 				}
 				if rPong {
-					c.sendNotif <- packet.NewPong().ToBytesIgnoreError()
+					select {
+					case <-c.closeNotif:
+					case c.sendNotif <- packet.NewPong().ToBytesIgnoreError():
+					}
 				}
 				kAlive.Reset(c.keepAlive)
 				select {
@@ -170,7 +174,11 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 				rIn = append(rIn, cR)
 			}
 		}
-		c.recvNotif <- rIn
+		select {
+		case <-c.closeNotif:
+			return true, hasPing
+		case c.recvNotif <- rIn:
+		}
 		return false, hasPing
 	} else if resp.StatusCode == http.StatusAccepted {
 		return false, false
@@ -221,19 +229,31 @@ func (c *Client) wsStart(wsURL string) {
 			if len(recvBuff) < 1 && msg[len(msg)-1] == '\n' {
 				switch packet.GetCommandIgnoreError(msg) {
 				case packet.Ping:
-					c.sendNotif <- packet.NewPong().ToBytesIgnoreError()
+					select {
+					case <-c.closeNotif:
+					case c.sendNotif <- packet.NewPong().ToBytesIgnoreError():
+					}
 				case packet.Pong:
 				default:
-					c.recvNotif <- [][]byte{msg}
+					select {
+					case <-c.closeNotif:
+					case c.recvNotif <- [][]byte{msg}:
+					}
 				}
 			} else if len(recvBuff) > 0 && msg[len(msg)-1] == '\n' {
 				recvBuff = append(recvBuff, msg...)
 				switch packet.GetCommandIgnoreError(recvBuff) {
 				case packet.Ping:
-					c.sendNotif <- packet.NewPong().ToBytesIgnoreError()
+					select {
+					case <-c.closeNotif:
+					case c.sendNotif <- packet.NewPong().ToBytesIgnoreError():
+					}
 				case packet.Pong:
 				default:
-					c.recvNotif <- [][]byte{recvBuff}
+					select {
+					case <-c.closeNotif:
+					case c.recvNotif <- [][]byte{recvBuff}:
+					}
 				}
 				recvBuff = nil
 			} else {
@@ -254,20 +274,21 @@ func (c *Client) wsStart(wsURL string) {
 				}
 				return
 			}
-			msg, ok := <-c.sendNotif
-			if !ok {
+			select {
+			case <-c.closeNotif:
 				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
-			}
-			err = c.conn.WriteMessage(websocket.TextMessage, append(msg, []byte("\r\n")...))
-			if err != nil {
-				c.closeMutex.Lock()
-				defer c.closeMutex.Unlock()
-				if c.active {
-					c.active = false
-					_ = c.close(err)
+			case msg := <-c.sendNotif:
+				err = c.conn.WriteMessage(websocket.TextMessage, append(msg, []byte("\r\n")...))
+				if err != nil {
+					c.closeMutex.Lock()
+					defer c.closeMutex.Unlock()
+					if c.active {
+						c.active = false
+						_ = c.close(err)
+					}
+					return
 				}
-				return
 			}
 		}
 	}()
@@ -321,7 +342,11 @@ func (c *Client) Send(p *packet.Packet) error {
 	if err != nil {
 		return err
 	}
-	c.sendNotif <- bts
+	select {
+	case <-c.closeNotif:
+		return errors.New("client closed")
+	case c.sendNotif <- bts:
+	}
 	return nil
 }
 
@@ -332,8 +357,12 @@ func (c *Client) Receive() (*packet.Packet, error) {
 	c.recvMutex.Lock()
 	defer c.recvMutex.Unlock()
 	if len(c.recvBuffer) < 1 {
-		pl := <-c.recvNotif
-		c.recvBuffer = append(c.recvBuffer, pl...)
+		select {
+		case <-c.closeNotif:
+			return nil, errors.New("client closed")
+		case pl := <-c.recvNotif:
+			c.recvBuffer = append(c.recvBuffer, pl...)
+		}
 	}
 	if len(c.recvBuffer) > 0 {
 		var tr []byte
@@ -351,9 +380,9 @@ func (c *Client) close(err error) error {
 		c.restClient.CloseIdleConnections()
 	}
 	close(c.closeNotif)
-	close(c.recvNotif)
-	close(c.sendNotif)
-	close(c.kaNotif)
+	//close(c.recvNotif)
+	//close(c.sendNotif)
+	//close(c.kaNotif)
 	if c.closeEvent != nil {
 		c.closeEvent(c, err)
 	}
@@ -429,7 +458,10 @@ func (c *Client) SetKeepAlive(ka time.Duration) {
 				c.keepAlive = ka
 			}
 		} else if c.conn != nil {
-			c.kaNotif <- true
+			select {
+			case <-c.closeNotif:
+			case c.kaNotif <- true:
+			}
 			c.keepAlive = 0
 		}
 	} else {
