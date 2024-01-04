@@ -5,7 +5,7 @@ import (
 	"golang.local/gc-c-com/packet"
 )
 
-// QuizList Sent from web client to app server
+// QuizList Sent from app server to web client
 const QuizList = "lquiz"
 
 func NewQuizList(entries []QuizListEntry, key *rsa.PrivateKey) (*packet.Packet, error) {
