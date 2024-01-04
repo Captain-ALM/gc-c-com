@@ -18,6 +18,7 @@ func NewMultiListener(listeners []Listener, onAccept func(l Listener, t Transpor
 	}
 	for _, cl := range listeners {
 		cl.SetOnAccept(onAccept)
+		cl.SetOnConnect(onConnect)
 		cl.SetOnClose(onClose)
 		cl.SetTimeout(timeout)
 	}
