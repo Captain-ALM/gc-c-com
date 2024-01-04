@@ -64,11 +64,16 @@ func (h *Handler) Activate() {
 					}
 					tOut.Reset(ctOut)
 				} else {
-					select {
-					case <-h.closedChannel:
-						return
-					case <-tOut.C:
-						tOut.Reset(ctOut)
+					valid = true
+					for valid {
+						select {
+						case <-h.closedChannel:
+							return
+						case <-h.connNotif:
+						case <-tOut.C:
+							tOut.Reset(ctOut)
+							valid = false
+						}
 					}
 				}
 			case <-tOut.C:
@@ -92,12 +97,14 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	case <-h.closedChannel:
 		return
 	case h.connNotif <- true:
+	default:
 	}
 	defer func() {
 		select {
 		case <-h.closedChannel:
 			return
 		case h.connNotif <- true:
+		default:
 		}
 	}()
 	hasPing := false
