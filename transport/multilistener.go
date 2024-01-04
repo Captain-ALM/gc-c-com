@@ -59,36 +59,45 @@ func (m *MultiListener) Close() error {
 }
 
 func (m *MultiListener) SetOnAccept(callback func(l Listener, t Transport) Transport) {
-	if m == nil || !m.init || callback == nil {
+	if m == nil || callback == nil {
+		return
+	}
+	m.acceptEvent = callback
+	if !m.init {
 		return
 	}
 	m.listenerMutex.Lock()
 	defer m.listenerMutex.Unlock()
-	m.acceptEvent = callback
 	for _, cl := range m.listeners {
 		cl.SetOnAccept(callback)
 	}
 }
 
 func (m *MultiListener) SetOnConnect(callback func(l Listener, t Transport)) {
-	if m == nil || !m.init || callback == nil {
+	if m == nil || callback == nil {
+		return
+	}
+	m.connectEvent = callback
+	if !m.init {
 		return
 	}
 	m.listenerMutex.Lock()
 	defer m.listenerMutex.Unlock()
-	m.connectEvent = callback
 	for _, cl := range m.listeners {
 		cl.SetOnConnect(callback)
 	}
 }
 
 func (m *MultiListener) SetOnClose(callback func(t Transport, e error)) {
-	if m == nil || !m.init || callback == nil {
+	if m == nil || callback == nil {
+		return
+	}
+	m.closeEvent = callback
+	if !m.init {
 		return
 	}
 	m.listenerMutex.Lock()
 	defer m.listenerMutex.Unlock()
-	m.closeEvent = callback
 	for _, cl := range m.listeners {
 		cl.SetOnClose(callback)
 	}
@@ -111,12 +120,15 @@ func (m *MultiListener) CloseTransports() error {
 }
 
 func (m *MultiListener) SetTimeout(to time.Duration) {
-	if m == nil || !m.init {
+	if m == nil {
+		return
+	}
+	m.timeout = to
+	if !m.init {
 		return
 	}
 	m.listenerMutex.Lock()
 	defer m.listenerMutex.Unlock()
-	m.timeout = to
 	for _, cl := range m.listeners {
 		cl.SetTimeout(to)
 	}
