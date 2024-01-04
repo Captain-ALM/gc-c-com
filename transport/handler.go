@@ -130,7 +130,7 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 }
 
 func (h *Handler) receiveRequest(request *http.Request) bool {
-	if request.Body == nil {
+	if request.Body == nil || request.ContentLength < 1 {
 		return false
 	}
 	hasPing := false
@@ -147,6 +147,9 @@ func (h *Handler) receiveRequest(request *http.Request) bool {
 		default:
 			rIn = append(rIn, cR)
 		}
+	}
+	if len(rIn) < 1 {
+		return false
 	}
 	select {
 	case <-h.closedChannel:
@@ -246,7 +249,7 @@ func (h *Handler) Receive() (*packet.Packet, error) {
 	}
 	h.recvMutex.Lock()
 	defer h.recvMutex.Unlock()
-	if len(h.recvBuffer) < 1 {
+	for len(h.recvBuffer) < 1 {
 		select {
 		case <-h.closedChannel:
 			return nil, errors.New("handler closed")
