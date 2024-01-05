@@ -141,7 +141,6 @@ func (h *Handler) receiveRequest(request *http.Request) bool {
 		cBts := bScan.Bytes()
 		cR := make([]byte, len(cBts))
 		copy(cR, cBts)
-		DebugPrintln("Handler.receiveRequest - cBts: " + hex.EncodeToString(cBts))
 		DebugPrintln("Handler.receiveRequest - cR: " + hex.EncodeToString(cR))
 		switch packet.GetCommandIgnoreError(cR) {
 		case packet.Ping:
