@@ -106,9 +106,9 @@ func (c *Client) restStart(restURL string) bool {
 					case c.sendNotif <- packet.NewPong().ToBytesIgnoreError():
 					}
 				}
-				kAlive.Reset(c.keepAlive)
 				select {
 				case <-kAlive.C:
+					kAlive.Reset(c.keepAlive)
 				case <-c.closeNotif:
 					c.closeMutex.Lock()
 					defer c.closeMutex.Unlock()
