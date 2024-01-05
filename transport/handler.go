@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bufio"
+	"encoding/hex"
 	"errors"
 	"golang.local/gc-c-com/packet"
 	"net/http"
@@ -140,6 +141,8 @@ func (h *Handler) receiveRequest(request *http.Request) bool {
 		cBts := bScan.Bytes()
 		cR := make([]byte, len(cBts))
 		copy(cR, cBts)
+		DebugPrintln("Handler.receiveRequest - cBts: " + hex.EncodeToString(cBts))
+		DebugPrintln("Handler.receiveRequest - cR: " + hex.EncodeToString(cR))
 		switch packet.GetCommandIgnoreError(cR) {
 		case packet.Ping:
 			hasPing = true
@@ -148,6 +151,7 @@ func (h *Handler) receiveRequest(request *http.Request) bool {
 			rIn = append(rIn, cR)
 		}
 	}
+	DebugPrintln("Handler.receiveRequest - rl: " + strconv.Itoa(len(rIn)))
 	if len(rIn) < 1 {
 		return false
 	}
@@ -175,7 +179,7 @@ func (h *Handler) sendResponse(response http.ResponseWriter, needPong bool) {
 		response.Header().Set("Content-Length", "0")
 		response.WriteHeader(http.StatusAccepted)
 	} else {
-		DebugPrintln("HNDL_SND_RSPCL: " + strconv.Itoa(sz))
+		DebugPrintln("Handler.sendResponse - sz: " + strconv.Itoa(sz))
 		response.Header().Set("Content-Length", strconv.Itoa(sz))
 		response.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		response.WriteHeader(http.StatusOK)
@@ -183,7 +187,7 @@ func (h *Handler) sendResponse(response http.ResponseWriter, needPong bool) {
 		if len(thePong) > 0 {
 			h.sendBuffer = append(h.sendBuffer, thePong)
 		}
-		DebugPrintln("HNDL_SND_RSPCL: " + strconv.Itoa(len(h.sendBuffer)))
+		DebugPrintln("Handler.sendResponse - cl: " + strconv.Itoa(len(h.sendBuffer)))
 		for _, bytes := range h.sendBuffer {
 			_, err := response.Write(bytes)
 			if err != nil {
@@ -242,7 +246,7 @@ func (h *Handler) Send(p *packet.Packet) error {
 	h.sendMutex.Lock()
 	defer h.sendMutex.Unlock()
 	h.sendBuffer = append(h.sendBuffer, bts)
-	DebugPrintln("HNDL_SND: " + strconv.Itoa(len(h.sendBuffer)))
+	DebugPrintln("Handler.Send: " + strconv.Itoa(len(h.sendBuffer)))
 	return nil
 }
 
