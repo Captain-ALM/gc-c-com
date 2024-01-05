@@ -105,8 +105,8 @@ func (l *ListenHandler) Close() error {
 	if l == nil {
 		return nil
 	}
-	err := l.CloseTransports()
 	l.active = false
+	err := l.intCloseTransports()
 	return err
 }
 
@@ -131,20 +131,33 @@ func (l *ListenHandler) SetOnClose(callback func(t Transport, e error)) {
 	l.closeEvent = callback
 }
 
-func (l *ListenHandler) CloseTransports() error {
-	if !l.IsActive() {
-		return errors.New("listen handler inactive")
-	}
-	var err error
+func (l *ListenHandler) getTransports() []Transport {
 	l.handlerMutex.Lock()
 	defer l.handlerMutex.Unlock()
-	for _, handler := range l.handlerMap {
-		er := handler.Close()
+	var trnsp []Transport
+	for _, ctp := range l.handlerMap {
+		trnsp = append(trnsp, ctp)
+	}
+	return trnsp
+}
+
+func (l *ListenHandler) intCloseTransports() error {
+	var err error
+	trnsp := l.getTransports()
+	for _, socket := range trnsp {
+		er := socket.Close()
 		if er != nil {
 			err = er
 		}
 	}
 	return err
+}
+
+func (l *ListenHandler) CloseTransports() error {
+	if !l.IsActive() {
+		return errors.New("listen handler inactive")
+	}
+	return l.intCloseTransports()
 }
 
 func (l *ListenHandler) SetTimeout(to time.Duration) {

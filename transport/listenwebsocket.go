@@ -75,8 +75,8 @@ func (l *ListenWebsocket) Close() error {
 	if l == nil {
 		return nil
 	}
-	err := l.CloseTransports()
 	l.active = false
+	err := l.intCloseTransports()
 	return err
 }
 
@@ -101,20 +101,33 @@ func (l *ListenWebsocket) SetOnClose(callback func(t Transport, e error)) {
 	l.closeEvent = callback
 }
 
-func (l *ListenWebsocket) CloseTransports() error {
-	if !l.IsActive() {
-		return errors.New("listen handler inactive")
-	}
-	var err error
+func (l *ListenWebsocket) getTransports() []Transport {
 	l.socketMutex.Lock()
 	defer l.socketMutex.Unlock()
-	for _, socket := range l.socketMap {
+	var trnsp []Transport
+	for _, ctp := range l.socketMap {
+		trnsp = append(trnsp, ctp)
+	}
+	return trnsp
+}
+
+func (l *ListenWebsocket) intCloseTransports() error {
+	var err error
+	trnsp := l.getTransports()
+	for _, socket := range trnsp {
 		er := socket.Close()
 		if er != nil {
 			err = er
 		}
 	}
 	return err
+}
+
+func (l *ListenWebsocket) CloseTransports() error {
+	if !l.IsActive() {
+		return errors.New("listen handler inactive")
+	}
+	return l.intCloseTransports()
 }
 
 func (l *ListenWebsocket) SetTimeout(to time.Duration) {
