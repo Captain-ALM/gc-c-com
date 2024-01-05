@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -82,7 +83,8 @@ func (c *Client) restStart(restURL string) bool {
 				case <-c.closeNotif:
 					return
 				case bts := <-c.sendNotif:
-					c.appendToSendBuffer(bts)
+					tLn := c.appendToSendBuffer(bts)
+					DebugPrintln("RS_BTSS_PUMP: " + strconv.Itoa(tLn))
 				}
 			}
 		}()
@@ -125,10 +127,11 @@ func (c *Client) restStart(restURL string) bool {
 	return false
 }
 
-func (c *Client) appendToSendBuffer(bts []byte) {
+func (c *Client) appendToSendBuffer(bts []byte) int {
 	c.sendMutex.Lock()
 	defer c.sendMutex.Unlock()
 	c.sendBuffer = append(c.sendBuffer, bts)
+	return len(c.sendBuffer)
 }
 
 func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
@@ -163,6 +166,7 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 		DebugErrIsNil(err)
 		return true, false
 	}
+	DebugPrintln("RS_HNDLP_CL: " + strconv.Itoa(int(resp.ContentLength)))
 	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
 		hasPing = false
 		bScan := bufio.NewScanner(resp.Body)
@@ -183,6 +187,7 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 		case <-c.closeNotif:
 			return true, hasPing
 		case c.recvNotif <- rIn:
+			DebugPrintln("RS_HNDLP_RBTS: " + strconv.Itoa(len(rIn)))
 		}
 		return false, hasPing
 	} else if resp.StatusCode == http.StatusAccepted {
