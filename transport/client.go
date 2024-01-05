@@ -3,6 +3,7 @@ package transport
 import (
 	"bufio"
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"github.com/gorilla/websocket"
 	"golang.local/gc-c-com/packet"
@@ -160,13 +161,14 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 				return true, false
 			}
 		}
+		DebugPrintln("Client.handlerProcessor - buff: " + hex.EncodeToString(buff.Bytes()))
 		resp, err = c.restClient.Post(c.restTargetURL, "text/plain; charset=utf-8", buff)
 	}
 	if err != nil {
 		DebugErrIsNil(err)
 		return true, false
 	}
-	DebugPrintln("RS_HNDLP_CL: " + strconv.Itoa(int(resp.ContentLength)))
+	DebugPrintln("Client.handlerProcessor - cl: " + strconv.Itoa(int(resp.ContentLength)))
 	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
 		hasPing = false
 		bScan := bufio.NewScanner(resp.Body)
@@ -187,7 +189,7 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 		case <-c.closeNotif:
 			return true, hasPing
 		case c.recvNotif <- rIn:
-			DebugPrintln("RS_HNDLP_RBTS: " + strconv.Itoa(len(rIn)))
+			DebugPrintln("Client.handlerProcessor - rl: " + strconv.Itoa(len(rIn)))
 		}
 		return false, hasPing
 	} else if resp.StatusCode == http.StatusAccepted {
