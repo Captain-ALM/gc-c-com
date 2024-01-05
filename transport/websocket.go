@@ -92,21 +92,31 @@ func (w *Websocket) Activate(conn *websocket.Conn) {
 	go func() {
 		defer func() { _ = w.conn.Close() }()
 		for w.active {
-			err := w.conn.SetWriteDeadline(time.Now().Add(w.timeout))
-			if err != nil {
-				w.closeMutex.Lock()
-				defer w.closeMutex.Unlock()
-				if w.active {
-					w.active = false
-					_ = w.close(err)
-				}
-				return
-			}
 			select {
 			case <-w.closedChannel:
+				err := w.conn.SetWriteDeadline(time.Now().Add(w.timeout))
+				if err != nil {
+					w.closeMutex.Lock()
+					defer w.closeMutex.Unlock()
+					if w.active {
+						w.active = false
+						_ = w.close(err)
+					}
+					return
+				}
 				_ = w.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			case msg := <-w.sendNotif:
+				err := w.conn.SetWriteDeadline(time.Now().Add(w.timeout))
+				if err != nil {
+					w.closeMutex.Lock()
+					defer w.closeMutex.Unlock()
+					if w.active {
+						w.active = false
+						_ = w.close(err)
+					}
+					return
+				}
 				err = w.conn.WriteMessage(websocket.TextMessage, append(msg, []byte("\r\n")...))
 				if err != nil {
 					w.closeMutex.Lock()

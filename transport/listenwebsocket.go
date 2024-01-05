@@ -34,9 +34,10 @@ func (l *ListenWebsocket) ServeHTTP(writer http.ResponseWriter, request *http.Re
 		return
 	}
 	conn, err := l.Upgrader.Upgrade(writer, request, nil)
-	if err == nil {
+	if DebugErrIsNil(err) {
 		nID, err := uuid.NewRandom()
 		if err != nil {
+			DebugErrIsNil(err)
 			return
 		}
 		l.socketMutex.Lock()

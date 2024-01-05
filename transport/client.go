@@ -61,6 +61,7 @@ func (c *Client) restStart(restURL string) bool {
 	c.restClient = &http.Client{Timeout: c.timeout}
 	resp, err := c.restClient.Get(restURL)
 	if err != nil {
+		DebugErrIsNil(err)
 		return false
 	}
 	defer func() { _, _ = io.Copy(io.Discard, resp.Body); _ = resp.Body.Close() }()
@@ -68,6 +69,7 @@ func (c *Client) restStart(restURL string) bool {
 		buff := make([]byte, resp.ContentLength)
 		ln, err := resp.Body.Read(buff)
 		if err != nil {
+			DebugErrIsNil(err)
 			return false
 		}
 		c.restTargetURL = restURL + "?s=" + url.QueryEscape(strings.Trim(string(buff[:ln]), "\r\n"))
@@ -146,16 +148,19 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 		for _, bts := range c.sendBuffer {
 			_, err = buff.Write(bts)
 			if err != nil {
+				DebugErrIsNil(err)
 				return true, false
 			}
 			_, err = buff.Write([]byte("\r\n"))
 			if err != nil {
+				DebugErrIsNil(err)
 				return true, false
 			}
 		}
 		resp, err = c.restClient.Post(c.restTargetURL, "text/plain; charset=utf-8", buff)
 	}
 	if err != nil {
+		DebugErrIsNil(err)
 		return true, false
 	}
 	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
@@ -199,6 +204,7 @@ func (c *Client) wsStart(wsURL string) {
 	c.wsDialer = &websocket.Dialer{HandshakeTimeout: c.timeout}
 	conn, _, err := c.wsDialer.Dial(wsURL, nil)
 	if err != nil {
+		DebugErrIsNil(err)
 		return
 	}
 	c.conn = conn
@@ -264,21 +270,31 @@ func (c *Client) wsStart(wsURL string) {
 	go func() {
 		defer func() { _ = c.conn.Close() }()
 		for c.active {
-			err := c.conn.SetWriteDeadline(time.Now().Add(c.timeout))
-			if err != nil {
-				c.closeMutex.Lock()
-				defer c.closeMutex.Unlock()
-				if c.active {
-					c.active = false
-					_ = c.close(err)
-				}
-				return
-			}
 			select {
 			case <-c.closeNotif:
+				err := c.conn.SetWriteDeadline(time.Now().Add(c.timeout))
+				if err != nil {
+					c.closeMutex.Lock()
+					defer c.closeMutex.Unlock()
+					if c.active {
+						c.active = false
+						_ = c.close(err)
+					}
+					return
+				}
 				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			case msg := <-c.sendNotif:
+				err := c.conn.SetWriteDeadline(time.Now().Add(c.timeout))
+				if err != nil {
+					c.closeMutex.Lock()
+					defer c.closeMutex.Unlock()
+					if c.active {
+						c.active = false
+						_ = c.close(err)
+					}
+					return
+				}
 				err = c.conn.WriteMessage(websocket.TextMessage, append(msg, []byte("\r\n")...))
 				if err != nil {
 					c.closeMutex.Lock()
