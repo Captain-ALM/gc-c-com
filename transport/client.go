@@ -85,7 +85,7 @@ func (c *Client) restStart(restURL string) bool {
 					return
 				case bts := <-c.sendNotif:
 					tLn := c.appendToSendBuffer(bts)
-					DebugPrintln("RS_BTSS_PUMP: " + strconv.Itoa(tLn))
+					DebugPrintln("Client.restStart PUMP - tLn: " + strconv.Itoa(tLn))
 				}
 			}
 		}()
@@ -148,7 +148,7 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 	if len(c.sendBuffer) < 1 {
 		resp, err = c.restClient.Get(c.restTargetURL)
 	} else {
-		buff := bytes.NewBuffer(make([]byte, c.getSendSize()))
+		buff := bytes.NewBuffer(make([]byte, 0, c.getSendSize()))
 		for _, bts := range c.sendBuffer {
 			_, err = buff.Write(bts)
 			if err != nil {
