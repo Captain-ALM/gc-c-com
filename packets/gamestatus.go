@@ -6,7 +6,7 @@ import (
 )
 
 // GameStatus Sent from app server to web client
-const GameStatus = "qstat"
+const GameStatus = "gstat"
 
 func NewGameStatus(message string, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(GameStatus, &GameMessagePayload{message}, key)

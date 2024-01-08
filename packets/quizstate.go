@@ -7,7 +7,7 @@ import (
 )
 
 // QuizState Sent from app server to web client
-const QuizState = "qstat"
+const QuizState = "qzstat"
 
 func NewQuizState(id uint32, state EnumQuizState, key *rsa.PrivateKey) (*packet.Packet, error) {
 	return packet.New(QuizState, &QuizStatePayload{id, state}, key)
