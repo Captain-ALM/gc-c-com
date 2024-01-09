@@ -4,7 +4,7 @@ Connection Worker Code for GC-C-COM.
 (C) Alfred Manville 2024
  */
 
-import * as PStructs from 'pstructs.js';
+import * as PStructs from './pstructs.js';
 
 let lMsgTime = Date.now();
 let sendBuff = [];

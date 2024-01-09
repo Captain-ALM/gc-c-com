@@ -5,7 +5,7 @@ Master server supporting wrapper.
 (C) Alfred Manville 2024
  */
 
-import * as GCCLIB from 'clib.js';
+import * as GCCLIB from './clib.js';
 
 const baseDomain = "decidequiz.captainalm.com";
 const baseURL = "https://decidequiz.captainalm.com/servers/master/connect";

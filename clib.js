@@ -10,7 +10,7 @@ let pkEV = null;
 let pkerrEV = null;
 let connfEV = null;
 
-const bWrkr = new Worker("cworker.js");
+const bWrkr = new Worker("./cworker.js");
 
 bWrkr.onmessage = (e) => {
     if (e.data == undefined || e.data.TYPE == undefined) {

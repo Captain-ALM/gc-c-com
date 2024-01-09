@@ -252,7 +252,7 @@ export function NewPacket(command) {
 	if (cAttrb.length > 0) {
 		pkToRet.payload = {TYPE: "payload"};
 		for (let i = 0; i < cAttrb.length; ++i) {
-			pkToRet.payload[cAttrb] = undefined;
+			pkToRet.payload[cAttrb[1]] = undefined;
 		}
 	}
 	return pkToRet;
