@@ -60,6 +60,7 @@ function pump() {
                         }
                         tOutID = setTimeout(pump,kAliveVal);
                     }).catch((ex) => {
+                        rSessionURL = null;
                         postMessage({TYPE: "closed", ERROR: ex});
                         clearTimeout(tOutID);
                     });
@@ -69,10 +70,12 @@ function pump() {
                     throw rsp.status;
                 }
             } catch (ex) {
+                rSessionURL = null;
                 postMessage({TYPE: "closed", ERROR: ex});
                 clearTimeout(tOutID);
             }
         }).catch((ex) => {
+            rSessionURL = null;
             postMessage({TYPE: "closed", ERROR: ex});
             clearTimeout(tOutID);
         })
@@ -120,6 +123,9 @@ function recv(e) {
 }
 
 function startRest(targ) {
+    if (wSock !== null || rSessionURL !== null) {
+        return
+    }
     fetch("https://" + targ + "/rs", {method: "GET", credentials: "same-origin", cache: "no-store", redirect: "error"}).then((rsp) => {
         try {
             if (rsp.status === 200 && parseInt(rsp.headers.get("Content-Length"), 10) > 0 && rsp.headers.get("Content-Type").toLowerCase().startsWith("text/plain")) {
@@ -142,6 +148,9 @@ function startRest(targ) {
 }
 
 function startWS(targ) {
+    if (wSock !== null || rSessionURL !== null) {
+        return
+    }
     wSock = new WebSocket("wss://"+targ+"/ws");
     wSock.onopen = (e) => {
         postMessage({TYPE: "opened"});
@@ -150,10 +159,14 @@ function startWS(targ) {
     wSock.onmessage = recv;
     wSock.onclose = (e) => {
         if (!rsFall) {
-            postMessage({TYPE: "closed", ERROR: e});
+            if (e.wasClean) {
+                postMessage({TYPE: "closed"});
+            } else {
+                postMessage({TYPE: "closed", ERROR: e});
+            }
+            clearTimeout(tOutID);
         }
         wSock = null;
-        clearTimeout(tOutID);
     };
     wSock.onerror = (e) => {
         wSock = null;

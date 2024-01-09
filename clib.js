@@ -66,21 +66,21 @@ export function SetKeepAlive(kAlive) {
 }
 
 export function SetOpenHandler(hndl) {
-    openedEV = hndl;
+    openedEV = (hndl == undefined) ? null : hndl;
 }
 
 export function SetCloseHandler(hndl) {
-    closedEV = hndl;
+    closedEV = (hndl == undefined) ? null : hndl;
 }
 
 export function SetPacketHandler(hndl) {
-    pkEV = hndl;
+    pkEV = (hndl == undefined) ? null : hndl;
 }
 
 export function SetPacketErrorHandler(hndl) {
-    pkerrEV = hndl;
+    pkerrEV = (hndl == undefined) ? null : hndl;
 }
 
 export function SetConnectionFailureHandler(hndl) {
-    connfEV = hndl;
+    connfEV = (hndl == undefined) ? null : hndl;
 }
