@@ -1,3 +1,11 @@
+/*
+Packet Structs for GC-C-COM.
+
+(C) Alfred Manville 2024
+ */
+
+export const Ping = "i";
+export const Pong = "o";
 export const AuthCheck = "acheck";
 export const AuthLogout = "alout";
 export const AuthStatus = "astat";
@@ -108,6 +116,8 @@ const remapStorage = {
 };
 
 const payloadPairs = {
+	"i": [],
+	"o": [],
 	"acheck": [],
 	"alout": [],
 	"astat": pAuthStatus,
@@ -303,10 +313,7 @@ export function StringifyPacket(pk) {
 		}
 		return JSON.stringify(pkToRet);
 	} catch (ex) {
-		return {
-			TYPE: "error",
-			ERROR: ex
-		};
+		return ex.toString();
 	}
 }
 
