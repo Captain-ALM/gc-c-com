@@ -40,9 +40,8 @@ GCCLIB.SetCloseHandler(closedHandle);
 GCCLIB.SetConnectionFailureHandler(closedHandle);
 
 export function Disconnect() {
-    connecting = false;
     if (isActive) {
-        isActive = false;
+        connecting = false;
         GCCLIB.Close();
     }
 }
