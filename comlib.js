@@ -49,8 +49,8 @@ bWrkr.onmessage = (e) => {
     }
 };
 
-bWrkr.onerror = (e) => {
-    console.log("Worker Error: " + e);
+bWrkr.onerror = () => {
+    console.log("Worker Error!");
 };
 
 bWrkr.onmessageerror = (e) => {
@@ -61,6 +61,12 @@ function Activate(connURL, connDomain, connExt, mode) {
     if (!isActivating) {
         isActivating = true;
         bWrkr.postMessage({TYPE: "activate", connu: connURL, connd: connDomain, conne: connExt, MODE: mode});
+    }
+}
+
+function Open(targ, mode) {
+    if (!isActivating) {
+        bWrkr.postMessage({TYPE: "open", target: targ, MODE: mode});
     }
 }
 
@@ -75,6 +81,10 @@ function Send(pk) {
 }
 
 function Close() {
+    bWrkr.postMessage({TYPE: "close"});
+}
+
+function Stop() {
     bWrkr.postMessage({TYPE: "close"});
 }
 
