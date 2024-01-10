@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"golang.local/gc-c-com/packet"
+	"strings"
 )
 
 // QuizState Sent from app server to web client
@@ -22,17 +23,17 @@ type EnumQuizState string
 
 func (e *EnumQuizState) UnmarshalJSON(bytes []byte) error {
 	if e == nil {
-		return errors.New("packets.EnumAuthStatus: UnmarshalJSON on nil pointer")
+		return errors.New("packets.QuizState: UnmarshalJSON on nil pointer")
 	}
-	*e = EnumQuizState(bytes)
+	*e = EnumQuizState(strings.Trim(string(bytes), "\""))
 	return nil
 }
 
 func (e *EnumQuizState) MarshalJSON() ([]byte, error) {
 	if e == nil {
-		return []byte("null"), nil
+		return []byte("\"null\""), nil
 	}
-	return []byte(*e), nil
+	return []byte("\"" + *e + "\""), nil
 }
 
 const (

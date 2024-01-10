@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"golang.local/gc-c-com/packet"
+	"strings"
 )
 
 // AuthStatus Sent from app server to web client
@@ -25,15 +26,15 @@ func (e *EnumAuthStatus) UnmarshalJSON(bytes []byte) error {
 	if e == nil {
 		return errors.New("packets.EnumAuthStatus: UnmarshalJSON on nil pointer")
 	}
-	*e = EnumAuthStatus(bytes)
+	*e = EnumAuthStatus(strings.Trim(string(bytes), "\""))
 	return nil
 }
 
 func (e *EnumAuthStatus) MarshalJSON() ([]byte, error) {
 	if e == nil {
-		return []byte("null"), nil
+		return []byte("\"null\""), nil
 	}
-	return []byte(*e), nil
+	return []byte("\"" + *e + "\""), nil
 }
 
 const (

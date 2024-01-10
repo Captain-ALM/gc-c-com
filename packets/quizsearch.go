@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"golang.local/gc-c-com/packet"
+	"strings"
 )
 
 // QuizSearch Sent from web client to app server
@@ -24,15 +25,15 @@ func (e *EnumQuizSearchFilter) UnmarshalJSON(bytes []byte) error {
 	if e == nil {
 		return errors.New("packets.EnumQuizSearchFilter: UnmarshalJSON on nil pointer")
 	}
-	*e = EnumQuizSearchFilter(bytes)
+	*e = EnumQuizSearchFilter(strings.Trim(string(bytes), "\""))
 	return nil
 }
 
 func (e *EnumQuizSearchFilter) MarshalJSON() ([]byte, error) {
 	if e == nil {
-		return []byte("null"), nil
+		return []byte("\"null\""), nil
 	}
-	return []byte(*e), nil
+	return []byte("\"" + *e + "\""), nil
 }
 
 const (
