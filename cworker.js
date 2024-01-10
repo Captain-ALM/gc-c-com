@@ -4,7 +4,7 @@ Connection Worker Code for GC-C-COM.
 (C) Alfred Manville 2024
  */
 
-import * as PStructs from './pstructs.js';
+importScripts('./pstructs.js');
 
 let lMsgTime = Date.now();
 let sendBuff = [];
@@ -14,6 +14,9 @@ let tOutID = null;
 let wSock = null;
 let rSessionURL = null;
 let rsFall = false;
+let cActv = false;
+let cActvNNotif = false;
+let pkBuff = [];
 
 function getSentContents() {
     let toSend = sendBuff[0] + "\r\n";
@@ -41,10 +44,10 @@ function pump() {
                         let pks = tpr.split("\r\n");
                         for (let i = 0; i < pks.length; ++i) {
                             if (pks[i] !== "") {
-                                let cpk = PStructs.ParsePacket(pks[i]);
+                                let cpk = ParsePacket(pks[i]);
                                 if (cpk.TYPE === "packet") {
-                                    if (cpk.command === PStructs.Ping) {
-                                        let jPK = PStructs.StringifyPacket(PStructs.NewPacket(PStructs.Pong));
+                                    if (cpk.command === Ping) {
+                                        let jPK = StringifyPacket(NewPacket(Pong));
                                         if (jPK.startsWith("{")) {
                                             sendBuff.push(jPK);
                                         } else {
@@ -86,7 +89,7 @@ function pump() {
                 wSock.close();
                 return
             }
-            let jPK = PStructs.StringifyPacket(PStructs.NewPacket(PStructs.Ping));
+            let jPK = StringifyPacket(NewPacket(Ping));
             if (jPK.startsWith("{")) {
                 wSock.send(jPK + "\r\n");
             } else {
@@ -103,10 +106,10 @@ function recv(e) {
     }
     rsFall = false;
     lMsgTime = Date.now();
-    let cpk = PStructs.ParsePacket(e.data);
+    let cpk = ParsePacket(e.data);
     if (cpk.TYPE === "packet") {
-        if (cpk.command === PStructs.Ping) {
-            let jPK = PStructs.StringifyPacket(PStructs.NewPacket(PStructs.Pong));
+        if (cpk.command === Ping) {
+            let jPK = StringifyPacket(NewPacket(Pong));
             if (jPK.startsWith("{")) {
                 if (wSock !== null && wSock.readyState > 0) {
                     wSock.send(jPK + "\r\n");
@@ -133,6 +136,10 @@ function startRest(targ) {
                     rSessionURL = "https://" + targ + "/rs?s=" + tpr;
                     tOutID = setTimeout(pump, kAliveVal);
                     postMessage({TYPE: "opened"});
+                    for (let i = 0; i < pkBuff.length; ++i) {
+                        sendBuff.push(pkBuff[i]);
+                    }
+                    pkBuff = [];
                 }).catch((ex) => {
                     postMessage({TYPE: "connf", ERROR: ex});
                 });
@@ -155,6 +162,10 @@ function startWS(targ) {
     wSock.onopen = (e) => {
         postMessage({TYPE: "opened"});
         tOutID = setTimeout(pump, kAliveVal);
+        for (let i = 0; i < pkBuff.length; ++i) {
+            wSock.send(pkBuff[i] + "\r\n");
+        }
+        pkBuff = [];
     };
     wSock.onmessage = recv;
     wSock.onclose = (e) => {
@@ -179,13 +190,68 @@ function startWS(targ) {
     };
 }
 
+function cActivate(connURL, connDomain, connExt, mode) {
+    if (cActv) {
+        let tURL = connURL;
+        if (connExt != undefined) {
+            tURL += connExt.toString();
+        }
+        fetch(tURL, {method: "GET", credentials: "same-origin", cache: "no-store", redirect: "error"}).then((rsp) => {
+            try {
+                if (rsp.status === 404) {
+                    setTimeout(() => {
+                        cActivate(connURL, connDomain, undefined, mode);
+                    });
+                } else if (rsp.status === 200 && parseInt(rsp.headers.get("Content-Length"), 10) > 0 && rsp.headers.get("Content-Type").toLowerCase().startsWith("text/plain")) {
+                    rsp.text().then((subPth) => {
+                        cActv = false;
+                        onmessage({data: {TYPE: "open", target: connDomain+subPth, MODE: mode}});
+                        if (cActvNNotif) {
+                            cActvNNotif = false;
+                            postMessage({TYPE: "actv"});
+                        }
+                    }).catch((ex) => {
+                        cActv = false;
+                        if (cActvNNotif) {
+                            cActvNNotif = false;
+                            postMessage({TYPE: "actv"});
+                        }
+                    });
+                } else {
+                    throw rsp.status;
+                }
+            } catch (ex) {
+                setTimeout(() => {
+                    cActivate(connURL, connDomain, connExt, mode);
+                });
+            }
+        }).catch((ex) => {
+            setTimeout(() => {
+                cActivate(connURL, connDomain, connExt, mode);
+            });
+        });
+    } else if (cActvNNotif) {
+        cActvNNotif = false;
+        postMessage({TYPE: "actv"});
+    }
+}
+
 onmessage = (e) => {
     if (e.data == undefined || e.data.TYPE == undefined) {
         return
     }
     switch (e.data.TYPE) {
+        case "activate":
+            if (rSessionURL === null && wSock === null && !cActv && typeof e.data.connu === "string" && typeof e.data.connd === "string") {
+                cActvNNotif = true;
+                cActv = true;
+                setTimeout(() => {
+                    cActivate(e.data.connu, e.data.connd, e.data.conne, e.data.MODE);
+                });
+            }
+        break;
         case "open":
-            if (typeof e.data.target === "string") {
+            if (!cActv && typeof e.data.target === "string") {
                 rsFall = false;
                 if (e.data.MODE == undefined) {
                     rsFall = true;
@@ -198,28 +264,37 @@ onmessage = (e) => {
             }
         break;
         case "send":
-            let jPK = PStructs.StringifyPacket(e.data.packet);
+            if (cActv) {
+                break;
+            }
+            let jPK = StringifyPacket(e.data.packet);
             if (jPK.startsWith("{")) {
                 if (rSessionURL !== null) {
                     sendBuff.push(jPK);
                 } else if (wSock !== null && wSock.readyState > 0) {
-                    wSock.send(jPK);
+                    wSock.send(jPK + "\r\n");
                     rsFall = false;
+                } else {
+                    pkBuff.push(jPK);
                 }
             } else {
                 postMessage({TYPE: "pkerr", ERROR: jPK});
             }
         break;
         case "close":
-            if (wSock !== null) {
-                rsFall = false;
-                wSock.close();
-                wSock = null;
-                clearTimeout(tOutID);
-            } else if (rSessionURL !== null) {
-                postMessage({TYPE: "closed"});
-                rSessionURL = null;
-                clearTimeout(tOutID);
+            if (cActv) {
+                cActv = false;
+            } else {
+                if (wSock !== null) {
+                    rsFall = false;
+                    wSock.close();
+                    wSock = null;
+                    clearTimeout(tOutID);
+                } else if (rSessionURL !== null) {
+                    postMessage({TYPE: "closed"});
+                    rSessionURL = null;
+                    clearTimeout(tOutID);
+                }
             }
         break;
         case "ka":

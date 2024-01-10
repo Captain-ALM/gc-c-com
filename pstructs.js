@@ -4,43 +4,43 @@ Packet Structs for GC-C-COM.
 (C) Alfred Manville 2024
  */
 
-export const Ping = "i";
-export const Pong = "o";
-export const AuthCheck = "acheck";
-export const AuthLogout = "alout";
-export const AuthStatus = "astat";
-export const CurrentStatus = "cstat";
-export const GameAnswer = "agame";
-export const GameCommit = "cgame";
-export const GameCountdown = "dgame";
-export const GameEnd = "end";
-export const GameError = "egame";
-export const GameLeaderboard = "lgame";
-export const GameLeave = "lev";
-export const GameNotFound = "g404";
-export const GameProceed = "pgame";
-export const GameQuestion = "qgame";
-export const GameScore = "sgame";
-export const GameStatus = "gstat";
-export const Halt = "h";
-export const HashLogin = "hlogin";
-export const HostedGame = "hgame";
-export const ID = "id";
-export const IDGuest = "ig";
-export const JoinGame = "jgame";
-export const KickGuest = "kg";
-export const NewGame = "ngame";
-export const QueryStatus = "qstat";
-export const QuizData = "quiz";
-export const QuizDelete = "dquiz";
-export const QuizList = "lquiz";
-export const QuizRequest = "rquiz";
-export const QuizSearch = "squiz";
-export const QuizState = "qzstat";
-export const QuizUpload = "uquiz";
-export const QuizVisibility = "vquiz";
-export const TokenLogin = "tlogin";
-export const UserDelete = "udel";
+const Ping = "i";
+const Pong = "o";
+const AuthCheck = "acheck";
+const AuthLogout = "alout";
+const AuthStatus = "astat";
+const CurrentStatus = "cstat";
+const GameAnswer = "agame";
+const GameCommit = "cgame";
+const GameCountdown = "dgame";
+const GameEnd = "end";
+const GameError = "egame";
+const GameLeaderboard = "lgame";
+const GameLeave = "lev";
+const GameNotFound = "g404";
+const GameProceed = "pgame";
+const GameQuestion = "qgame";
+const GameScore = "sgame";
+const GameStatus = "gstat";
+const Halt = "h";
+const HashLogin = "hlogin";
+const HostedGame = "hgame";
+const ID = "id";
+const IDGuest = "ig";
+const JoinGame = "jgame";
+const KickGuest = "kg";
+const NewGame = "ngame";
+const QueryStatus = "qstat";
+const QuizData = "quiz";
+const QuizDelete = "dquiz";
+const QuizList = "lquiz";
+const QuizRequest = "rquiz";
+const QuizSearch = "squiz";
+const QuizState = "qzstat";
+const QuizUpload = "uquiz";
+const QuizVisibility = "vquiz";
+const TokenLogin = "tlogin";
+const UserDelete = "udel";
 
 const gameLeaderboardPairSet = [["i","id"],["n","nickname"],["s","score"],["t","streak"]];
 const quizQuestionsPairSet = ["qs","questions"];
@@ -50,7 +50,7 @@ const quizAnswerSetPairSet = [["ca","correctAnswer"],["as","answers"]];
 const quizAnswerPairSet = [["a","answer"],["c","color"]];
 const quizListPairSet = [["i","id"],["n","name"],["m","mine"],["p","isPublic"]];
 
-export const EnumAuthStatus = {
+const EnumAuthStatus = {
 	Required: "required",
 	SignedOut: "none",
 	LoggedOut: "none",
@@ -62,7 +62,7 @@ export const EnumAuthStatus = {
 	RejectedHash: "rejectedhash"
 };
 
-export const EnumQuizSearchFilter = {
+const EnumQuizSearchFilter = {
 	All: "all",
 	OtherUsers: "othr",
 	Mine: "mine",
@@ -70,7 +70,7 @@ export const EnumQuizSearchFilter = {
 	MyPrivate: "mprv"
 };
 
-export const EnumQuizState = {
+const EnumQuizState = {
 	NotFound: "404",
 	UploadFailed: "403",
 	Deleted: "202",
@@ -237,7 +237,7 @@ function remapPayloadContents(cmdid,val,sorc,targ) {
 	return toRet;
 }
 
-export function NewPacket(command) {
+function NewPacket(command) {
 	if (typeof command !== "string") {
 		return {
 			TYPE: "error",
@@ -258,7 +258,7 @@ export function NewPacket(command) {
 	return pkToRet;
 }
 
-export function GetPacketCommand(pkJSON) {
+function GetPacketCommand(pkJSON) {
 	try {
 		let tCommand = JSON.parse(pkJSON).c;
 		if (typeof tCommand !== "string") {
@@ -273,7 +273,7 @@ export function GetPacketCommand(pkJSON) {
 	}
 }
 
-export function ParsePacket(pkJSON) {
+function ParsePacket(pkJSON) {
 	try {
 		let pkToRet = {TYPE: "packet"};
 		let pk = JSON.parse(pkJSON);
@@ -298,7 +298,7 @@ export function ParsePacket(pkJSON) {
 	}
 }
 
-export function StringifyPacket(pk) {
+function StringifyPacket(pk) {
 	try {
 		if (pk.TYPE !== "packet") {
 			throw "Not a packet";
@@ -317,7 +317,7 @@ export function StringifyPacket(pk) {
 	}
 }
 
-export function NewGameLeaderboardEntry(id, nickname, score, streak) {
+function NewGameLeaderboardEntry(id, nickname, score, streak) {
 	return {
 		id: id,
 		nickname: nickname,
@@ -326,28 +326,28 @@ export function NewGameLeaderboardEntry(id, nickname, score, streak) {
 	};
 }
 
-export function NewQuizQuestion(type,question) {
+function NewQuizQuestion(type,question) {
 	return {
 		type: type,
 		question: question
 	};
 }
 
-export function NewQuizAnswer(answer,color) {
+function NewQuizAnswer(answer,color) {
 	return {
 		answer: answer,
 		color: color
 	};
 }
 
-export function NewJoinGameEntry(id,nickname) {
+function NewJoinGameEntry(id,nickname) {
 	return {
 		id: id,
 		nickname: nickname
 	};
 }
 
-export function NewQuizListEntry(id,name,mine,isPublic) {
+function NewQuizListEntry(id,name,mine,isPublic) {
 	return {
 		id: id,
 		name: name,
@@ -356,19 +356,19 @@ export function NewQuizListEntry(id,name,mine,isPublic) {
 	};
 }
 
-export function NewQuizQuestions(questions) {
+function NewQuizQuestions(questions) {
 	return {
 		questions: questions
 	};
 }
 
-export function NewQuizAnswers(answers) {
+function NewQuizAnswers(answers) {
 	return {
 		answers: answers
 	};
 }
 
-export function NewQuizAnswerSet(answers,correctAnswer) {
+function NewQuizAnswerSet(answers,correctAnswer) {
 	return {
 		correctAnswer: correctAnswer,
 		answers: answers

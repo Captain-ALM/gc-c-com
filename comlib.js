@@ -9,6 +9,7 @@ let closedEV = null;
 let pkEV = null;
 let pkerrEV = null;
 let connfEV = null;
+let isActivating = false;
 
 const bWrkr = new Worker("./cworker.js");
 
@@ -17,6 +18,8 @@ bWrkr.onmessage = (e) => {
         return
     }
     switch (e.data.TYPE) {
+        case "actv":
+            isActivating = false;
         case "opened":
             if (openedEV) {
                 openedEV();
@@ -45,42 +48,54 @@ bWrkr.onmessage = (e) => {
     }
 };
 
-export function Start(targ, mode) {
+bWrkr.onerror = (e) => {
+    console.log("Worker Error: " + e);
+};
+
+bWrkr.onmessageerror = (e) => {
+    console.log("Worker MSG Error: " + e);
+};
+
+function Activate(connURL, connDomain, connExt, mode) {
+    bWrkr.postMessage({TYPE: "activate", connu: connURL, connd: connDomain, conne: connExt, MODE: mode});
+}
+
+function Start(targ, mode) {
     bWrkr.postMessage({TYPE: "open", target: targ, MODE: mode});
 }
 
-export function Send(pk) {
+function Send(pk) {
     bWrkr.postMessage({TYPE: "send", packet: pk});
 }
 
-export function Close() {
+function Close() {
     bWrkr.postMessage({TYPE: "close"});
 }
 
-export function SetTimeout(tOut) {
+function SetTimeout(tOut) {
     bWrkr.postMessage({TYPE: "to", val: tOut});
 }
 
-export function SetKeepAlive(kAlive) {
+function SetKeepAlive(kAlive) {
     bWrkr.postMessage({TYPE: "ka", val: kAlive});
 }
 
-export function SetOpenHandler(hndl) {
+function SetOpenHandler(hndl) {
     openedEV = (hndl == undefined) ? null : hndl;
 }
 
-export function SetCloseHandler(hndl) {
+function SetCloseHandler(hndl) {
     closedEV = (hndl == undefined) ? null : hndl;
 }
 
-export function SetPacketHandler(hndl) {
+function SetPacketHandler(hndl) {
     pkEV = (hndl == undefined) ? null : hndl;
 }
 
-export function SetPacketErrorHandler(hndl) {
+function SetPacketErrorHandler(hndl) {
     pkerrEV = (hndl == undefined) ? null : hndl;
 }
 
-export function SetConnectionFailureHandler(hndl) {
+function SetConnectionFailureHandler(hndl) {
     connfEV = (hndl == undefined) ? null : hndl;
 }
