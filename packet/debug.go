@@ -1,4 +1,4 @@
-package transport
+package packet
 
 import (
 	"log"
@@ -6,8 +6,8 @@ import (
 )
 
 func debugPrintln(msg string) {
-	if os.Getenv("DEBUG_COM") == "1" {
-		log.Println("DEBUG_COM:", msg)
+	if os.Getenv("DEBUG_COM_PK") == "1" {
+		log.Println("DEBUG_COM_PK:", msg)
 	}
 }
 

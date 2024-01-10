@@ -47,12 +47,13 @@ func From(packet []byte) (*Packet, error) {
 }
 
 func FromIgnoreError(packet []byte) *Packet {
-	pk, _ := From(packet)
+	pk, err := From(packet)
+	debugErrIsNil(err)
 	return pk
 }
 
 func FromNew(pk *Packet, err error) *Packet {
-	if err == nil {
+	if debugErrIsNil(err) {
 		return pk
 	}
 	return &Packet{}
@@ -70,6 +71,7 @@ func GetCommand(packet []byte) (string, error) {
 }
 
 func GetCommandIgnoreError(packet []byte) string {
-	pk, _ := GetCommand(packet)
+	pk, err := GetCommand(packet)
+	debugErrIsNil(err)
 	return pk
 }

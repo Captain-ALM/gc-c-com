@@ -63,7 +63,7 @@ func (c *Client) restStart(restURL string) bool {
 	c.restClient = &http.Client{Timeout: c.timeout}
 	resp, err := c.restClient.Get(restURL)
 	if err != nil {
-		DebugErrIsNil(err)
+		debugErrIsNil(err)
 		return false
 	}
 	defer func() { _, _ = io.Copy(io.Discard, resp.Body); _ = resp.Body.Close() }()
@@ -71,7 +71,7 @@ func (c *Client) restStart(restURL string) bool {
 		buff := make([]byte, resp.ContentLength)
 		ln, err := resp.Body.Read(buff)
 		if err != nil {
-			DebugErrIsNil(err)
+			debugErrIsNil(err)
 			return false
 		}
 		c.restTargetURL = restURL + "?s=" + url.QueryEscape(strings.Trim(string(buff[:ln]), "\r\n"))
@@ -85,7 +85,7 @@ func (c *Client) restStart(restURL string) bool {
 					return
 				case bts := <-c.sendNotif:
 					tLn := c.appendToSendBuffer(bts)
-					DebugPrintln("Client.restStart PUMP - tLn: " + strconv.Itoa(tLn))
+					debugPrintln("Client.restStart PUMP - tLn: " + strconv.Itoa(tLn))
 				}
 			}
 		}()
@@ -152,23 +152,23 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 		for _, bts := range c.sendBuffer {
 			_, err = buff.Write(bts)
 			if err != nil {
-				DebugErrIsNil(err)
+				debugErrIsNil(err)
 				return true, false
 			}
 			_, err = buff.Write([]byte("\r\n"))
 			if err != nil {
-				DebugErrIsNil(err)
+				debugErrIsNil(err)
 				return true, false
 			}
 		}
-		DebugPrintln("Client.handlerProcessor - buff: " + hex.EncodeToString(buff.Bytes()))
+		debugPrintln("Client.handlerProcessor - buff: " + hex.EncodeToString(buff.Bytes()))
 		resp, err = c.restClient.Post(c.restTargetURL, "text/plain; charset=utf-8", buff)
 	}
 	if err != nil {
-		DebugErrIsNil(err)
+		debugErrIsNil(err)
 		return true, false
 	}
-	DebugPrintln("Client.handlerProcessor - cl: " + strconv.Itoa(int(resp.ContentLength)))
+	debugPrintln("Client.handlerProcessor - cl: " + strconv.Itoa(int(resp.ContentLength)))
 	if resp.StatusCode == http.StatusOK && resp.ContentLength > 0 && strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/plain") {
 		hasPing = false
 		bScan := bufio.NewScanner(resp.Body)
@@ -189,7 +189,7 @@ func (c *Client) handlerProcessor() (failed bool, hasPing bool) {
 		case <-c.closeNotif:
 			return true, hasPing
 		case c.recvNotif <- rIn:
-			DebugPrintln("Client.handlerProcessor - rl: " + strconv.Itoa(len(rIn)))
+			debugPrintln("Client.handlerProcessor - rl: " + strconv.Itoa(len(rIn)))
 		}
 		return false, hasPing
 	} else if resp.StatusCode == http.StatusAccepted {
@@ -211,7 +211,7 @@ func (c *Client) wsStart(wsURL string) {
 	c.wsDialer = &websocket.Dialer{HandshakeTimeout: c.timeout}
 	conn, _, err := c.wsDialer.Dial(wsURL, nil)
 	if err != nil {
-		DebugErrIsNil(err)
+		debugErrIsNil(err)
 		return
 	}
 	c.conn = conn
@@ -365,7 +365,7 @@ func (c *Client) Send(p *packet.Packet) error {
 	if err != nil {
 		return err
 	}
-	DebugPrintln("Client.send - bts: " + string(bts))
+	debugPrintln("Client.send - bts: " + string(bts))
 	select {
 	case <-c.closeNotif:
 		return errors.New("client closed")

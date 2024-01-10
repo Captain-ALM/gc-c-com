@@ -154,7 +154,7 @@ func (w *Websocket) Send(p *packet.Packet) error {
 	if err != nil {
 		return err
 	}
-	DebugPrintln("Websocket.send - bts: " + string(bts))
+	debugPrintln("Websocket.send - bts: " + string(bts))
 	select {
 	case <-w.closedChannel:
 	case w.sendNotif <- bts:
