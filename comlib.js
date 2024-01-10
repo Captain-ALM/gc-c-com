@@ -20,6 +20,7 @@ bWrkr.onmessage = (e) => {
     switch (e.data.TYPE) {
         case "actv":
             isActivating = false;
+        break;
         case "opened":
             if (openedEV) {
                 openedEV();
@@ -57,11 +58,16 @@ bWrkr.onmessageerror = (e) => {
 };
 
 function Activate(connURL, connDomain, connExt, mode) {
-    bWrkr.postMessage({TYPE: "activate", connu: connURL, connd: connDomain, conne: connExt, MODE: mode});
+    if (!isActivating) {
+        isActivating = true;
+        bWrkr.postMessage({TYPE: "activate", connu: connURL, connd: connDomain, conne: connExt, MODE: mode});
+    }
 }
 
 function Start(targ, mode) {
-    bWrkr.postMessage({TYPE: "open", target: targ, MODE: mode});
+    if (!isActivating) {
+        bWrkr.postMessage({TYPE: "open", target: targ, MODE: mode});
+    }
 }
 
 function Send(pk) {
