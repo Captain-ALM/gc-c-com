@@ -11,7 +11,7 @@ let pkerrEV = null;
 let connfEV = null;
 let isActivating = false;
 
-const bWrkr = new Worker("./cworker.js");
+const bWrkr = new Worker("./static/js/cworker.js");
 
 bWrkr.onmessage = (e) => {
     if (e.data == undefined || e.data.TYPE == undefined) {
