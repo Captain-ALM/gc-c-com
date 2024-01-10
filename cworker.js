@@ -18,6 +18,13 @@ let cActv = false;
 let cActvNNotif = false;
 let pkBuff = [];
 
+function toErrorString(e) {
+    if (e == undefined) {
+        return "";
+    }
+    return e.toString();
+}
+
 function getSentContents() {
     let toSend = sendBuff[0] + "\r\n";
     for (let i = 1; i < sendBuff.length; ++i) {
@@ -64,7 +71,7 @@ function pump() {
                         tOutID = setTimeout(pump,kAliveVal);
                     }).catch((ex) => {
                         rSessionURL = null;
-                        postMessage({TYPE: "closed", ERROR: ex});
+                        postMessage({TYPE: "closed", ERROR: toErrorString(ex)});
                         clearTimeout(tOutID);
                     });
                 } else if (rsp.status === 202){
@@ -74,12 +81,12 @@ function pump() {
                 }
             } catch (ex) {
                 rSessionURL = null;
-                postMessage({TYPE: "closed", ERROR: ex});
+                postMessage({TYPE: "closed", ERROR: toErrorString(ex)});
                 clearTimeout(tOutID);
             }
         }).catch((ex) => {
             rSessionURL = null;
-            postMessage({TYPE: "closed", ERROR: ex});
+            postMessage({TYPE: "closed", ERROR: toErrorString(ex)});
             clearTimeout(tOutID);
         })
     } else if (wSock !== null) {
@@ -141,16 +148,16 @@ function startRest(targ) {
                     }
                     pkBuff = [];
                 }).catch((ex) => {
-                    postMessage({TYPE: "connf", ERROR: ex});
+                    postMessage({TYPE: "connf", ERROR: toErrorString(ex)});
                 });
             } else {
                 throw rsp.status;
             }
         } catch (ex) {
-            postMessage({TYPE: "connf", ERROR: ex});
+            postMessage({TYPE: "connf", ERROR: toErrorString(ex)});
         }
     }).catch((ex) => {
-        postMessage({TYPE: "connf", ERROR: ex});
+        postMessage({TYPE: "connf", ERROR: toErrorString(ex)});
     });
 }
 
@@ -172,10 +179,10 @@ function startWS(targ) {
     wSock.onmessage = recv;
     wSock.onclose = (e) => {
         if (!rsFall) {
-            if (e.wasClean) {
+            if (e.code) {
                 postMessage({TYPE: "closed"});
             } else {
-                postMessage({TYPE: "closed", ERROR: e});
+                postMessage({TYPE: "closed", ERROR: toErrorString(e)});
             }
             clearTimeout(tOutID);
         }
@@ -187,7 +194,7 @@ function startWS(targ) {
         if (rsFall) {
             startRest(targ);
         } else {
-            postMessage({TYPE: "connf", ERROR: e});
+            postMessage({TYPE: "connf", ERROR: toErrorString(e)});
         }
     };
 }
