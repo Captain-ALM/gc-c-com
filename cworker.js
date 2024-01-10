@@ -20,7 +20,7 @@ let pkBuff = [];
 
 function getSentContents() {
     let toSend = sendBuff[0] + "\r\n";
-    for (let i = 1; i < toSend.length; ++i) {
+    for (let i = 1; i < sendBuff.length; ++i) {
         toSend += sendBuff[i] + "\r\n";
     }
     sendBuff = [];
@@ -161,10 +161,12 @@ function startWS(targ) {
     wSock = new WebSocket("wss://"+targ+"/ws");
     wSock.onopen = (e) => {
         postMessage({TYPE: "opened"});
+		lMsgTime = Date.now();
         tOutID = setTimeout(pump, kAliveVal);
         for (let i = 0; i < pkBuff.length; ++i) {
             wSock.send(pkBuff[i] + "\r\n");
         }
+		lMsgTime = Date.now();
         pkBuff = [];
     };
     wSock.onmessage = recv;
