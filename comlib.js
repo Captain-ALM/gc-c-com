@@ -27,6 +27,7 @@ bWrkr.onmessage = (e) => {
             }
         break;
         case "closed":
+		    isActivating = false;
             if (closedEV) {
                 closedEV(e.data.ERROR);
             }
@@ -42,6 +43,7 @@ bWrkr.onmessage = (e) => {
             }
         break;
         case "connf":
+		    isActivating = false;
             if (connfEV) {
                 connfEV(e.data.ERROR);
             }
