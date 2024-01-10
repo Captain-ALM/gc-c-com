@@ -246,6 +246,7 @@ func (h *Handler) Send(p *packet.Packet) error {
 	defer h.sendMutex.Unlock()
 	h.sendBuffer = append(h.sendBuffer, bts)
 	DebugPrintln("Handler.Send: " + strconv.Itoa(len(h.sendBuffer)))
+	DebugPrintln("Handler.send - bts: " + string(bts))
 	return nil
 }
 

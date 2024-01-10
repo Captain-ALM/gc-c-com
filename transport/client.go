@@ -365,6 +365,7 @@ func (c *Client) Send(p *packet.Packet) error {
 	if err != nil {
 		return err
 	}
+	DebugPrintln("Client.send - bts: " + string(bts))
 	select {
 	case <-c.closeNotif:
 		return errors.New("client closed")
