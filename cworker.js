@@ -273,11 +273,12 @@ onmessage = (e) => {
             }
         break;
         case "send":
-            if (cActv) {
-                break;
-            }
             let jPK = StringifyPacket(e.data.packet);
             if (jPK.startsWith("{")) {
+                if (cActv) {
+                    pkBuff.push(jPK);
+                    break;
+                }
                 if (rSessionURL !== null) {
                     sendBuff.push(jPK);
                 } else if (wSock !== null && wSock.readyState > 0) {
