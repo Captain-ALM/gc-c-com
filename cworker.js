@@ -53,7 +53,7 @@ function pump() {
                                         } else {
                                             postMessage({TYPE: "pkerr", ERROR: jPK});
                                         }
-                                    } else {
+                                    } else if (cpk.command !== Pong) {
                                         postMessage({TYPE: "pk", packet: cpk});
                                     }
                                 } else {
@@ -117,7 +117,7 @@ function recv(e) {
             } else {
                 postMessage({TYPE: "pkerr", ERROR: jPK});
             }
-        } else {
+        } else if (cpk.command !== Pong) {
             postMessage({TYPE: "pk", packet: cpk});
         }
     } else {
