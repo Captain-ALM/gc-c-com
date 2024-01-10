@@ -210,7 +210,7 @@ function cActivate(connURL, connDomain, connExt, mode) {
                 if (rsp.status === 404) {
                     setTimeout(() => {
                         cActivate(connURL, connDomain, undefined, mode);
-                    });
+                    },100);
                 } else if (rsp.status === 200 && parseInt(rsp.headers.get("Content-Length"), 10) > 0 && rsp.headers.get("Content-Type").toLowerCase().startsWith("text/plain")) {
                     rsp.text().then((subPth) => {
                         cActv = false;
@@ -232,12 +232,12 @@ function cActivate(connURL, connDomain, connExt, mode) {
             } catch (ex) {
                 setTimeout(() => {
                     cActivate(connURL, connDomain, connExt, mode);
-                });
+                },100);
             }
         }).catch((ex) => {
             setTimeout(() => {
                 cActivate(connURL, connDomain, connExt, mode);
-            });
+            },100);
         });
     } else if (cActvNNotif) {
         cActvNNotif = false;
