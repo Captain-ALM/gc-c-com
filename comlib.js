@@ -94,6 +94,11 @@ function SetCloseHandler(hndl) {
     closedEV = (hndl == undefined) ? null : hndl;
 }
 
+function SetAllStopHandlers(hndl) {
+	connfEV = (hndl == undefined) ? null : hndl;
+	closedEV = (hndl == undefined) ? null : hndl;
+}
+
 function SetPacketHandler(hndl) {
     pkEV = (hndl == undefined) ? null : hndl;
 }
