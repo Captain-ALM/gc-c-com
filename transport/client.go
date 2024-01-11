@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.local/gc-c-com/packet"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -451,7 +452,7 @@ func (c *Client) SetOnClose(callback func(t Transport, e error)) {
 }
 
 func (c *Client) SetTimeout(to time.Duration) {
-	if c == nil {
+	if c == nil || to < 0 {
 		return
 	}
 	c.timeout = to
@@ -498,4 +499,11 @@ func (c *Client) GetKeepAlive() time.Duration {
 		return 0
 	}
 	return c.keepAlive
+}
+
+func (*Client) SetReadLimit(limit int64) {
+}
+
+func (c *Client) GetReadLimit() int64 {
+	return math.MaxInt64
 }

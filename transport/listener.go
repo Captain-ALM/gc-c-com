@@ -11,4 +11,6 @@ type Listener interface {
 	CloseTransports() error
 	SetTimeout(to time.Duration)
 	GetTimeout() time.Duration
+	SetReadLimit(limit int64)
+	GetReadLimit() int64
 }

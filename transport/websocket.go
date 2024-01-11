@@ -18,6 +18,7 @@ type Websocket struct {
 	timeout       time.Duration
 	closeMutex    *sync.Mutex
 	closedChannel chan bool
+	readLimit     int64
 }
 
 func (w *Websocket) Activate(conn *websocket.Conn) {
@@ -29,11 +30,15 @@ func (w *Websocket) Activate(conn *websocket.Conn) {
 	w.closeMutex = &sync.Mutex{}
 	w.recvNotif = make(chan []byte)
 	w.sendNotif = make(chan []byte)
+	if w.readLimit < 4 {
+		w.readLimit = 8192
+	}
 	w.active = true
 	go func() {
 		var recvBuff []byte
 		defer func() { _ = w.conn.Close() }()
 		for w.active {
+			w.conn.SetReadLimit(w.readLimit)
 			err := w.conn.SetReadDeadline(time.Now().Add(w.timeout))
 			if err != nil {
 				w.closeMutex.Lock()
@@ -207,7 +212,7 @@ func (w *Websocket) SetOnClose(callback func(t Transport, e error)) {
 }
 
 func (w *Websocket) SetTimeout(to time.Duration) {
-	if w == nil {
+	if w == nil || to < 0 {
 		return
 	}
 	w.timeout = to
@@ -218,4 +223,18 @@ func (w *Websocket) GetTimeout() time.Duration {
 		return 0
 	}
 	return w.timeout
+}
+
+func (w *Websocket) SetReadLimit(limit int64) {
+	if w == nil || limit < 4 {
+		return
+	}
+	w.readLimit = limit
+}
+
+func (w *Websocket) GetReadLimit() int64 {
+	if w == nil {
+		return 0
+	}
+	return w.readLimit
 }

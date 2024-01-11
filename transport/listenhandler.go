@@ -17,6 +17,7 @@ type ListenHandler struct {
 	handlerMutex *sync.Mutex
 	closeEvent   func(t Transport, e error)
 	timeout      time.Duration
+	readLimit    int64
 }
 
 func (l *ListenHandler) Activate() {
@@ -25,6 +26,9 @@ func (l *ListenHandler) Activate() {
 	}
 	l.handlerMap = make(map[string]*Handler)
 	l.handlerMutex = &sync.Mutex{}
+	if l.readLimit < 4 {
+		l.readLimit = 8192
+	}
 	l.active = true
 }
 
@@ -49,51 +53,59 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 			return
 		}
 		ch.ServeHTTP(writer, request)
-	} else if request.Method == http.MethodGet {
-		nID, err := uuid.NewRandom()
-		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		if err != nil {
-			eMsg := "Internal Error: " + err.Error()
-			writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
-			writer.WriteHeader(http.StatusInternalServerError)
-			_, _ = writer.Write([]byte(eMsg))
-			return
-		}
-		l.handlerMutex.Lock()
-		defer l.handlerMutex.Unlock()
-		hndl := &Handler{
-			ID: nID.String() + "-" + request.RemoteAddr,
-			closeEvent: func(t Transport, e error) {
-				l.handlerMutex.Lock()
-				defer l.handlerMutex.Unlock()
-				delete(l.handlerMap, t.GetID())
-				l.closeEvent(t, e)
-			},
-			timeout: l.timeout,
-		}
-		if l.acceptEvent != nil {
-			hndl = l.acceptEvent(l, hndl).(*Handler)
-		}
-		if hndl == nil {
-			eMsg := "Client Rejected"
-			writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
-			writer.WriteHeader(http.StatusNotAcceptable)
-			_, _ = writer.Write([]byte(eMsg))
-			return
-		}
-		l.handlerMap[hndl.ID] = hndl
-		hndl.Activate()
-		if l.connectEvent != nil {
-			l.connectEvent(l, hndl)
-		}
-		writer.Header().Set("Content-Length", strconv.Itoa(len(hndl.ID)))
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write([]byte(hndl.ID))
-	} else if request.Method == http.MethodOptions {
-		writer.Header().Set("Allow", http.MethodOptions+", "+http.MethodGet)
-		writer.WriteHeader(http.StatusOK)
 	} else {
-		writer.WriteHeader(http.StatusMethodNotAllowed)
+		if request.ContentLength > l.readLimit {
+			writer.WriteHeader(http.StatusExpectationFailed)
+			return
+		}
+		request.Body = http.MaxBytesReader(writer, request.Body, l.readLimit)
+		if request.Method == http.MethodGet {
+			nID, err := uuid.NewRandom()
+			writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			if err != nil {
+				eMsg := "Internal Error: " + err.Error()
+				writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
+				writer.WriteHeader(http.StatusInternalServerError)
+				_, _ = writer.Write([]byte(eMsg))
+				return
+			}
+			l.handlerMutex.Lock()
+			defer l.handlerMutex.Unlock()
+			hndl := &Handler{
+				ID: nID.String() + "-" + request.RemoteAddr,
+				closeEvent: func(t Transport, e error) {
+					l.handlerMutex.Lock()
+					defer l.handlerMutex.Unlock()
+					delete(l.handlerMap, t.GetID())
+					l.closeEvent(t, e)
+				},
+				timeout:   l.timeout,
+				readLimit: l.readLimit,
+			}
+			if l.acceptEvent != nil {
+				hndl = l.acceptEvent(l, hndl).(*Handler)
+			}
+			if hndl == nil {
+				eMsg := "Client Rejected"
+				writer.Header().Set("Content-Length", strconv.Itoa(len(eMsg)))
+				writer.WriteHeader(http.StatusNotAcceptable)
+				_, _ = writer.Write([]byte(eMsg))
+				return
+			}
+			l.handlerMap[hndl.ID] = hndl
+			hndl.Activate()
+			if l.connectEvent != nil {
+				l.connectEvent(l, hndl)
+			}
+			writer.Header().Set("Content-Length", strconv.Itoa(len(hndl.ID)))
+			writer.WriteHeader(http.StatusOK)
+			_, _ = writer.Write([]byte(hndl.ID))
+		} else if request.Method == http.MethodOptions {
+			writer.Header().Set("Allow", http.MethodOptions+", "+http.MethodGet)
+			writer.WriteHeader(http.StatusOK)
+		} else {
+			writer.WriteHeader(http.StatusMethodNotAllowed)
+		}
 	}
 }
 
@@ -161,7 +173,7 @@ func (l *ListenHandler) CloseTransports() error {
 }
 
 func (l *ListenHandler) SetTimeout(to time.Duration) {
-	if l == nil {
+	if l == nil || to < 0 {
 		return
 	}
 	l.timeout = to
@@ -180,4 +192,26 @@ func (l *ListenHandler) GetTimeout() time.Duration {
 		return 0
 	}
 	return l.timeout
+}
+
+func (l *ListenHandler) SetReadLimit(limit int64) {
+	if l == nil || limit < 4 {
+		return
+	}
+	l.readLimit = limit
+	if !l.IsActive() {
+		return
+	}
+	l.handlerMutex.Lock()
+	defer l.handlerMutex.Unlock()
+	for _, handler := range l.handlerMap {
+		handler.SetReadLimit(limit)
+	}
+}
+
+func (l *ListenHandler) GetReadLimit() int64 {
+	if l == nil {
+		return 0
+	}
+	return l.readLimit
 }

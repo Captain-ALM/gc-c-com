@@ -6,7 +6,10 @@ import (
 	"time"
 )
 
-func NewMultiListener(listeners []Listener, onAccept func(l Listener, t Transport) Transport, onConnect func(l Listener, t Transport), onClose func(t Transport, e error), timeout time.Duration) *MultiListener {
+func NewMultiListener(listeners []Listener, onAccept func(l Listener, t Transport) Transport, onConnect func(l Listener, t Transport), onClose func(t Transport, e error), timeout time.Duration, readLimit int64) *MultiListener {
+	if readLimit < 4 {
+		readLimit = 4
+	}
 	mL := &MultiListener{
 		init:          true,
 		acceptEvent:   onAccept,
@@ -15,12 +18,14 @@ func NewMultiListener(listeners []Listener, onAccept func(l Listener, t Transpor
 		listeners:     listeners,
 		listenerMutex: &sync.Mutex{},
 		timeout:       timeout,
+		readLimit:     readLimit,
 	}
 	for _, cl := range listeners {
 		cl.SetOnAccept(onAccept)
 		cl.SetOnConnect(onConnect)
 		cl.SetOnClose(onClose)
 		cl.SetTimeout(timeout)
+		cl.SetReadLimit(readLimit)
 	}
 	return mL
 }
@@ -33,6 +38,7 @@ type MultiListener struct {
 	listeners     []Listener
 	listenerMutex *sync.Mutex
 	timeout       time.Duration
+	readLimit     int64
 }
 
 func (m *MultiListener) IsActive() bool {
@@ -120,7 +126,7 @@ func (m *MultiListener) CloseTransports() error {
 }
 
 func (m *MultiListener) SetTimeout(to time.Duration) {
-	if m == nil {
+	if m == nil || to < 0 {
 		return
 	}
 	m.timeout = to
@@ -159,6 +165,11 @@ func (m *MultiListener) AddListener(l Listener) {
 	m.listenerMutex.Lock()
 	defer m.listenerMutex.Unlock()
 	m.listeners = append(m.listeners, l)
+	l.SetOnAccept(m.acceptEvent)
+	l.SetOnConnect(m.connectEvent)
+	l.SetOnClose(m.closeEvent)
+	l.SetTimeout(m.timeout)
+	l.SetReadLimit(m.readLimit)
 }
 
 func (m *MultiListener) RemoveListener(l Listener) {
@@ -179,4 +190,26 @@ func (m *MultiListener) ClearListeners() {
 	m.listenerMutex.Lock()
 	defer m.listenerMutex.Unlock()
 	m.listeners = nil
+}
+
+func (m *MultiListener) SetReadLimit(limit int64) {
+	if m == nil || limit < 4 {
+		return
+	}
+	m.readLimit = limit
+	if !m.init {
+		return
+	}
+	m.listenerMutex.Lock()
+	defer m.listenerMutex.Unlock()
+	for _, cl := range m.listeners {
+		cl.SetReadLimit(limit)
+	}
+}
+
+func (m *MultiListener) GetReadLimit() int64 {
+	if m == nil {
+		return 0
+	}
+	return m.readLimit
 }

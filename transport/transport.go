@@ -14,4 +14,6 @@ type Transport interface {
 	SetOnClose(callback func(t Transport, e error))
 	SetTimeout(to time.Duration)
 	GetTimeout() time.Duration
+	SetReadLimit(limit int64)
+	GetReadLimit() int64
 }

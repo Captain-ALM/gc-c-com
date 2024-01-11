@@ -24,6 +24,7 @@ type Handler struct {
 	timeout       time.Duration
 	closeMutex    *sync.Mutex
 	closedChannel chan bool
+	readLimit     int64
 }
 
 func (h *Handler) Activate() {
@@ -38,6 +39,9 @@ func (h *Handler) Activate() {
 	h.recvBuffer = nil
 	h.recvNotif = make(chan [][]byte)
 	h.connNotif = make(chan bool)
+	if h.readLimit < 4 {
+		h.readLimit = 8192
+	}
 	h.active = true
 	go func() {
 		ctOut := h.timeout
@@ -110,6 +114,17 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	}()
 	hasPing := false
 	if request.Method != http.MethodOptions {
+		if request.ContentLength > h.readLimit {
+			h.closeMutex.Lock()
+			defer h.closeMutex.Unlock()
+			if h.active {
+				h.active = false
+				_ = h.close(errors.New("handler overloaded"))
+			}
+			writer.WriteHeader(http.StatusExpectationFailed)
+			return
+		}
+		request.Body = http.MaxBytesReader(writer, request.Body, h.readLimit)
 		hasPing = h.receiveRequest(request)
 	}
 	if request.Method == http.MethodGet || request.Method == http.MethodPost {
@@ -305,7 +320,7 @@ func (h *Handler) SetOnClose(callback func(t Transport, e error)) {
 }
 
 func (h *Handler) SetTimeout(to time.Duration) {
-	if h == nil {
+	if h == nil || to < 0 {
 		return
 	}
 	h.timeout = to
@@ -323,4 +338,18 @@ func (h *Handler) GetTimeout() time.Duration {
 		return 0
 	}
 	return h.timeout
+}
+
+func (h *Handler) SetReadLimit(limit int64) {
+	if h == nil || limit < 4 {
+		return
+	}
+	h.readLimit = limit
+}
+
+func (h *Handler) GetReadLimit() int64 {
+	if h == nil {
+		return 0
+	}
+	return h.readLimit
 }

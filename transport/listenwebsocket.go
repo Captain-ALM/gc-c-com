@@ -17,6 +17,7 @@ type ListenWebsocket struct {
 	socketMutex  *sync.Mutex
 	closeEvent   func(t Transport, e error)
 	timeout      time.Duration
+	readLimit    int64
 	Upgrader     websocket.Upgrader
 }
 
@@ -26,6 +27,9 @@ func (l *ListenWebsocket) Activate() {
 	}
 	l.socketMap = make(map[string]*Websocket)
 	l.socketMutex = &sync.Mutex{}
+	if l.readLimit < 4 {
+		l.readLimit = 8192
+	}
 	l.active = true
 }
 
@@ -50,7 +54,8 @@ func (l *ListenWebsocket) ServeHTTP(writer http.ResponseWriter, request *http.Re
 				delete(l.socketMap, t.GetID())
 				l.closeEvent(t, e)
 			},
-			timeout: l.timeout,
+			timeout:   l.timeout,
+			readLimit: l.readLimit,
 		}
 		if l.acceptEvent != nil {
 			socket = l.acceptEvent(l, socket).(*Websocket)
@@ -131,7 +136,7 @@ func (l *ListenWebsocket) CloseTransports() error {
 }
 
 func (l *ListenWebsocket) SetTimeout(to time.Duration) {
-	if l == nil {
+	if l == nil || to < 0 {
 		return
 	}
 	l.timeout = to
@@ -150,4 +155,26 @@ func (l *ListenWebsocket) GetTimeout() time.Duration {
 		return 0
 	}
 	return l.timeout
+}
+
+func (l *ListenWebsocket) SetReadLimit(limit int64) {
+	if l == nil || limit < 4 {
+		return
+	}
+	l.readLimit = limit
+	if !l.IsActive() {
+		return
+	}
+	l.socketMutex.Lock()
+	defer l.socketMutex.Unlock()
+	for _, socket := range l.socketMap {
+		socket.SetReadLimit(limit)
+	}
+}
+
+func (l *ListenWebsocket) GetReadLimit() int64 {
+	if l == nil {
+		return 0
+	}
+	return l.readLimit
 }
