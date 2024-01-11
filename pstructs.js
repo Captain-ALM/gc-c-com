@@ -43,7 +43,7 @@ const TokenLogin = "tlogin";
 const UserDelete = "udel";
 
 const gameLeaderboardPairSet = [["i","id"],["n","nickname"],["s","score"],["t","streak"]];
-const quizQuestionsPairSet = ["qs","questions"];
+const quizQuestionsPairSet = [["qs","questions"]];
 const quizQuestionPairSet = [["t","type"],["q","quiz"]];
 const quizAnswersPairSet = [["as","answers"]];
 const quizAnswerSetPairSet = [["ca","correctAnswer"],["as","answers"]];
