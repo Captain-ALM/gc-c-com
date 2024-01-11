@@ -58,8 +58,8 @@ const EnumAuthStatus = {
 	LoggedIn: "active",
 	AcceptedJWT: "acceptedjwt",
 	RejectedJWT: "rejectedjwt",
-	AcceptedHash: "acceptedhash",
-	RejectedHash: "rejectedhash"
+	AcceptedHash: "acceptedhsh",
+	RejectedHash: "rejectedhsh"
 };
 
 const EnumQuizSearchFilter = {
