@@ -44,7 +44,7 @@ const UserDelete = "udel";
 
 const gameLeaderboardPairSet = [["i","id"],["n","nickname"],["s","score"],["t","streak"]];
 const quizQuestionsPairSet = [["qs","questions"]];
-const quizQuestionPairSet = [["t","type"],["q","quiz"]];
+const quizQuestionPairSet = [["t","type"],["q","question"]];
 const quizAnswersPairSet = [["as","answers"]];
 const quizAnswerSetPairSet = [["ca","correctAnswer"],["as","answers"]];
 const quizAnswerPairSet = [["a","answer"],["c","color"]];
