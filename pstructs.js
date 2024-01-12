@@ -181,57 +181,65 @@ function remapPayloadContents(cmdid,val,sorc,targ) {
 	let ij = "";
 	let ik = "";
 	let il = "";
+	let sr = [];
 	switch (cmdid) {
 		case "lgame":
 			ii = pGameLeaderboard[0][targ];
 			for (let i = 0; i < toRet[ii].length; ++i) {
-				toRet[ii][i] = remapPayloadContents("le",toRet[ii][i],sorc,targ);
+				sr.push(remapPayloadContents("le",toRet[ii][i],sorc,targ));
 			}
+			toRet[ii] = sr;
 		break;
 		case "qgame":
 			ii = pGameQuestion[0][targ];
 			toRet[ii] = remapPayloadContents("qq",toRet[ii],sorc,targ);
 			ij = pGameQuestion[1][targ];
 			for (let j = 0; j < toRet[ij].length; ++j) {
-				toRet[ij][j] = remapPayloadContents("qa",toRet[ij][j],sorc,targ);
+				sr.push(remapPayloadContents("qa",toRet[ij][j],sorc,targ));
 			}
+			toRet[ij] = sr;
 		break;
 		case "hgame":
 			ik = pHostedGame[2][targ];
 			for (let k = 0; k < toRet[ik].length; ++k) {
-				toRet[ik][k] = remapPayloadContents("jg",toRet[ik][k],sorc,targ);
+				sr.push(remapPayloadContents("jg",toRet[ik][k],sorc,targ));
 			}
+			toRet[ik] = sr;
 		break;
 		case "lquiz":
 			ii = pQuizList[0][targ];
 			for (let i = 0; i < toRet[ii].length; ++i) {
-				toRet[ii][i] = remapPayloadContents("qle",toRet[ii][i],sorc,targ);
+				sr.push(remapPayloadContents("qle",toRet[ii][i],sorc,targ));
 			}
+			toRet[ii] = sr;
 		break;
 		case "quiz":
 		case "uquiz":
 			ik = pQuizData[2][targ];
 			toRet[ik] = remapPayloadContents("qqs",toRet[ik],sorc,targ);
-			let il = pQuizData[3][targ];
+			il = pQuizData[3][targ];
 			toRet[il] = remapPayloadContents("qas",toRet[il],sorc,targ);
 		break;
 		case "qqs":
 			ii = quizQuestionsPairSet[0][targ];
 			for (let i = 0; i < toRet[ii].length; ++i) {
-				toRet[ii][i] = remapPayloadContents("qq",toRet[ii][i],sorc,targ);
+				sr.push(remapPayloadContents("qq",toRet[ii][i],sorc,targ));
 			}
+			toRet[ii] = sr;
 		break;
 		case "qas":
 			ii = quizAnswersPairSet[0][targ];
 			for (let i = 0; i < toRet[ii].length; ++i) {
-				toRet[ii][i] = remapPayloadContents("sqa",toRet[ii][i],sorc,targ);
+				sr.push(remapPayloadContents("sqa",toRet[ii][i],sorc,targ));
 			}
+			toRet[ii] = sr;
 		break;
 		case "sqa":
 			ij = quizAnswerSetPairSet[1][targ];
 			for (let j = 0; j < toRet[ij].length; ++j) {
-				toRet[ij][j] = remapPayloadContents("qa",toRet[ij][j],sorc,targ);
+				sr.push(remapPayloadContents("qa",toRet[ij][j],sorc,targ));
 			}
+			toRet[ij] = sr;
 		break;
 	}
 	return toRet;
