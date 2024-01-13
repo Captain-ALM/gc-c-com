@@ -58,7 +58,7 @@ func (l *ListenWebsocket) ServeHTTP(writer http.ResponseWriter, request *http.Re
 			readLimit: l.readLimit,
 		}
 		if l.acceptEvent != nil {
-			socket = l.acceptEvent(l, socket).(*Websocket)
+			socket, _ = l.acceptEvent(l, socket).(*Websocket)
 		}
 		if socket == nil {
 			_ = conn.Close()

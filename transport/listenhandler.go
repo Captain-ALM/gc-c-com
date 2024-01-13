@@ -83,7 +83,7 @@ func (l *ListenHandler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 				readLimit: l.readLimit,
 			}
 			if l.acceptEvent != nil {
-				hndl = l.acceptEvent(l, hndl).(*Handler)
+				hndl, _ = l.acceptEvent(l, hndl).(*Handler)
 			}
 			if hndl == nil {
 				eMsg := "Client Rejected"
