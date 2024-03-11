@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/hex"
 	"errors"
-	"golang.local/gc-c-com/packet"
+	"github.com/Captain-ALM/gc-c-com/packet"
 	"net/http"
 	"strconv"
 	"sync"

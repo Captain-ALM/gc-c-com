@@ -2,7 +2,7 @@ package packets
 
 import (
 	"crypto/rsa"
-	"golang.local/gc-c-com/packet"
+	"github.com/Captain-ALM/gc-c-com/packet"
 )
 
 // Halt Sent from master server to app server; sent from app server to web client

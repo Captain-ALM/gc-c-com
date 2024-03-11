@@ -2,7 +2,7 @@ package packets
 
 import (
 	"crypto/rsa"
-	"golang.local/gc-c-com/packet"
+	"github.com/Captain-ALM/gc-c-com/packet"
 )
 
 // KickGuest Sent from web client to app server

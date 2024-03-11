@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"golang.local/gc-c-com/packet"
+	"github.com/Captain-ALM/gc-c-com/packet"
 	"time"
 )
 

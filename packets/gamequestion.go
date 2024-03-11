@@ -2,7 +2,7 @@ package packets
 
 import (
 	"crypto/rsa"
-	"golang.local/gc-c-com/packet"
+	"github.com/Captain-ALM/gc-c-com/packet"
 )
 
 // GameQuestion Sent from app server to web client

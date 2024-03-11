@@ -2,8 +2,8 @@ package transport
 
 import (
 	"errors"
+	"github.com/Captain-ALM/gc-c-com/packet"
 	"github.com/gorilla/websocket"
-	"golang.local/gc-c-com/packet"
 	"sync"
 	"time"
 )

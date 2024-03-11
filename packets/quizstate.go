@@ -3,7 +3,7 @@ package packets
 import (
 	"crypto/rsa"
 	"errors"
-	"golang.local/gc-c-com/packet"
+	"github.com/Captain-ALM/gc-c-com/packet"
 	"strings"
 )
 
