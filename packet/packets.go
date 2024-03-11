@@ -8,6 +8,7 @@ import (
 const (
 	Ping = "i"
 	Pong = "o"
+	ID   = "id"
 )
 
 func NewPing() *Packet {
@@ -16,6 +17,14 @@ func NewPing() *Packet {
 
 func NewPong() *Packet {
 	return &Packet{Command: Pong}
+}
+
+func NewID(id uint32, key *rsa.PrivateKey) (*Packet, error) {
+	return New(ID, &IDPayload{id}, key)
+}
+
+type IDPayload struct {
+	ID uint32 `json:"i"`
 }
 
 func New(command string, payload any, key *rsa.PrivateKey) (*Packet, error) {

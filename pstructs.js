@@ -6,153 +6,14 @@ Packet Structs for GC-C-COM.
 
 const Ping = "i";
 const Pong = "o";
-const AuthCheck = "acheck";
-const AuthLogout = "alout";
-const AuthStatus = "astat";
-const CurrentStatus = "cstat";
-const GameAnswer = "agame";
-const GameCommit = "cgame";
-const GameCountdown = "dgame";
-const GameEnd = "end";
-const GameError = "egame";
-const GameLeaderboard = "lgame";
-const GameLeave = "lev";
-const GameNotFound = "g404";
-const GameProceed = "pgame";
-const GameQuestion = "qgame";
-const GameScore = "sgame";
-const GameStatus = "gstat";
-const Halt = "h";
-const HashLogin = "hlogin";
-const HostedGame = "hgame";
 const ID = "id";
-const IDGuest = "ig";
-const JoinGame = "jgame";
-const KickGuest = "kg";
-const NewGame = "ngame";
-const QueryStatus = "qstat";
-const QuizData = "quiz";
-const QuizDelete = "dquiz";
-const QuizList = "lquiz";
-const QuizRequest = "rquiz";
-const QuizSearch = "squiz";
-const QuizState = "qzstat";
-const QuizUpload = "uquiz";
-const QuizVisibility = "vquiz";
-const TokenLogin = "tlogin";
-const UserDelete = "udel";
 
-const gameLeaderboardPairSet = [["i","id"],["n","nickname"],["s","score"],["t","streak"]];
-const quizQuestionsPairSet = [["qs","questions"]];
-const quizQuestionPairSet = [["t","type"],["q","question"]];
-const quizAnswersPairSet = [["as","answers"]];
-const quizAnswerSetPairSet = [["ca","correctAnswer"],["as","answers"]];
-const quizAnswerPairSet = [["a","answer"],["c","color"]];
-const quizListPairSet = [["i","id"],["n","name"],["m","mine"],["p","isPublic"]];
-
-const EnumAuthStatus = {
-	Required: "required",
-	SignedOut: "none",
-	LoggedOut: "none",
-	SignedIn: "active",
-	LoggedIn: "active",
-	AcceptedJWT: "acceptedjwt",
-	RejectedJWT: "rejectedjwt",
-	AcceptedHash: "acceptedhsh",
-	RejectedHash: "rejectedhsh"
-};
-
-const EnumQuizSearchFilter = {
-	All: "all",
-	OtherUsers: "othr",
-	Mine: "mine",
-	MyPublic: "mpub",
-	MyPrivate: "mprv"
-};
-
-const EnumQuizState = {
-	NotFound: "404",
-	UploadFailed: "403",
-	Deleted: "202",
-	Created: "204",
-	Public: "pub",
-	Private: "prv"
-};
-
-const pAuthStatus = [["s","status"],["t","tokenHash"],["u","userEmail"]];
-const pCurrentStatus = [["i","id"],["c","current"],["m","max"]];
-const pAnswer = [["q","questionNumber"],["x","index"]];
-const pGameValue = [["v","value"]];
-const pGameMessage = [["m","message"]];
-const pGameLeaderboard = [["e","entries"]];
-const pGameQuestion = [["q","question"],["a","answers"]];
-const pHashLogin = [["h","hash"]];
-const pHostedGame = [["i","id"],["gi","guestID"],["gs","guests"]];
 const pID = [["i","id"]];
-const pJoinGame = [["i","id"],["n","nickname"]];
-const pNewGame = [["qi","quizID"],["mc","maxCountdown"],["se","streakEnabled"]];
-const pQuizData = [["i","id"],["n","name"],["q","questions"],["a","answers"]];
-const pQuizList = [["e","entries"]];
-const pQuizSearch = [["n","name"],["f","filter"]];
-const pQuizState = [["i","id"],["s","state"]];
-const pQuizVisibility = [["i","id"],["p","isPublic"]];
-const pTokenLogin = [["t","token"]];
-
-const remapStorage = {
-	"lgame": [],
-	"le": gameLeaderboardPairSet,
-	"qgame": [],
-	"qq": quizQuestionPairSet,
-	"qa": quizAnswerPairSet,
-	"hgame": [],
-	"jg": pJoinGame,
-	"lquiz": [],
-	"qle": quizListPairSet,
-	"quiz": [],
-	"uquiz": [],
-	"qqs": quizQuestionsPairSet,
-	"qas": quizAnswersPairSet,
-	"sqa": quizAnswerSetPairSet
-};
 
 const payloadPairs = {
 	"i": [],
 	"o": [],
-	"acheck": [],
-	"alout": [],
-	"astat": pAuthStatus,
-	"cstat": pCurrentStatus,
-	"agame": pAnswer,
-	"cgame": pAnswer,
-	"dgame": pGameValue,
-	"end": [],
-	"egame": pGameMessage,
-	"lgame": pGameLeaderboard,
-	"lev": [],
-	"g404": [],
-	"pgame": [],
-	"qgame": pGameQuestion,
-	"sgame": pGameValue,
-	"gstat": pGameMessage,
-	"h": [],
-	"hlogin": pHashLogin,
-	"hgame": pHostedGame,
 	"id": pID,
-	"ig": pID,
-	"jgame": pJoinGame,
-	"kg": pID,
-	"ngame": pNewGame,
-	"qstat": [],
-	"quiz": pQuizData,
-	"dquiz": pID,
-	"lquiz": pQuizList,
-	"rquiz": pID,
-	"squiz": pQuizSearch,
-	"qzstat": pQuizState,
-	"uquiz": pQuizData,
-	"vquiz": pQuizVisibility,
-	"tlogin": pTokenLogin,
-	"udel": []
 };
 
 function objectFieldSwap(swapPairs,val,sorc,targ) {
@@ -165,82 +26,6 @@ function objectFieldSwap(swapPairs,val,sorc,targ) {
 			continue;
 		}
 		toRet[swapPairs[i][targ]] = val[swapPairs[i][sorc]];
-	}
-	return toRet;
-}
-
-function remapPayloadContents(cmdid,val,sorc,targ) {
-	if (remapStorage[cmdid] == undefined) {
-		return val;
-	}
-	let toRet = val;
-	if (remapStorage[cmdid].length > 0) {
-		toRet = objectFieldSwap(remapStorage[cmdid],val,sorc,targ);
-	}
-	let ii = "";
-	let ij = "";
-	let ik = "";
-	let il = "";
-	let sr = [];
-	switch (cmdid) {
-		case "lgame":
-			ii = pGameLeaderboard[0][targ];
-			for (let i = 0; i < toRet[ii].length; ++i) {
-				sr.push(remapPayloadContents("le",toRet[ii][i],sorc,targ));
-			}
-			toRet[ii] = sr;
-		break;
-		case "qgame":
-			ii = pGameQuestion[0][targ];
-			toRet[ii] = remapPayloadContents("qq",toRet[ii],sorc,targ);
-			ij = pGameQuestion[1][targ];
-			for (let j = 0; j < toRet[ij].length; ++j) {
-				sr.push(remapPayloadContents("qa",toRet[ij][j],sorc,targ));
-			}
-			toRet[ij] = sr;
-		break;
-		case "hgame":
-			ik = pHostedGame[2][targ];
-			for (let k = 0; k < toRet[ik].length; ++k) {
-				sr.push(remapPayloadContents("jg",toRet[ik][k],sorc,targ));
-			}
-			toRet[ik] = sr;
-		break;
-		case "lquiz":
-			ii = pQuizList[0][targ];
-			for (let i = 0; i < toRet[ii].length; ++i) {
-				sr.push(remapPayloadContents("qle",toRet[ii][i],sorc,targ));
-			}
-			toRet[ii] = sr;
-		break;
-		case "quiz":
-		case "uquiz":
-			ik = pQuizData[2][targ];
-			toRet[ik] = remapPayloadContents("qqs",toRet[ik],sorc,targ);
-			il = pQuizData[3][targ];
-			toRet[il] = remapPayloadContents("qas",toRet[il],sorc,targ);
-		break;
-		case "qqs":
-			ii = quizQuestionsPairSet[0][targ];
-			for (let i = 0; i < toRet[ii].length; ++i) {
-				sr.push(remapPayloadContents("qq",toRet[ii][i],sorc,targ));
-			}
-			toRet[ii] = sr;
-		break;
-		case "qas":
-			ii = quizAnswersPairSet[0][targ];
-			for (let i = 0; i < toRet[ii].length; ++i) {
-				sr.push(remapPayloadContents("sqa",toRet[ii][i],sorc,targ));
-			}
-			toRet[ii] = sr;
-		break;
-		case "sqa":
-			ij = quizAnswerSetPairSet[1][targ];
-			for (let j = 0; j < toRet[ij].length; ++j) {
-				sr.push(remapPayloadContents("qa",toRet[ij][j],sorc,targ));
-			}
-			toRet[ij] = sr;
-		break;
 	}
 	return toRet;
 }
@@ -294,7 +79,6 @@ function ParsePacket(pkJSON) {
 		pkToRet.command = pk.c.toLowerCase();
 		if (typeof pk.p !== "undefined") {
 			pkToRet.payload = objectFieldSwap(payloadPairs[pkToRet.command], pk.p, 0, 1);
-			pkToRet.payload = remapPayloadContents(pkToRet.command, pkToRet.payload, 0, 1);
 			pkToRet.payload.TYPE = "payload";
 		}
 		return pkToRet;
@@ -317,68 +101,9 @@ function StringifyPacket(pk) {
 				throw "Not a payload";
 			}
 			pkToRet.p = objectFieldSwap(payloadPairs[pk.command], pk.payload, 1, 0);
-			pkToRet.p = remapPayloadContents(pkToRet.c, pkToRet.p, 1, 0);
 		}
 		return JSON.stringify(pkToRet);
 	} catch (ex) {
 		return ex.toString();
 	}
-}
-
-function NewGameLeaderboardEntry(id, nickname, score, streak) {
-	return {
-		id: id,
-		nickname: nickname,
-		score: score,
-		streak: streak
-	};
-}
-
-function NewQuizQuestion(type,question) {
-	return {
-		type: type,
-		question: question
-	};
-}
-
-function NewQuizAnswer(answer,color) {
-	return {
-		answer: answer,
-		color: color
-	};
-}
-
-function NewJoinGameEntry(id,nickname) {
-	return {
-		id: id,
-		nickname: nickname
-	};
-}
-
-function NewQuizListEntry(id,name,mine,isPublic) {
-	return {
-		id: id,
-		name: name,
-		mine: mine,
-		isPublic: isPublic
-	};
-}
-
-function NewQuizQuestions(questions) {
-	return {
-		questions: questions
-	};
-}
-
-function NewQuizAnswers(answers) {
-	return {
-		answers: answers
-	};
-}
-
-function NewQuizAnswerSet(answers,correctAnswer) {
-	return {
-		correctAnswer: correctAnswer,
-		answers: answers
-	};
 }
